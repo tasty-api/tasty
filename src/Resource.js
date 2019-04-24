@@ -1,40 +1,55 @@
 const axios = require('axios');
-const log = require('../libs/log')(module);
-const jsonpath = require('jsonpath');
 const assert = require('chai').assert;
+const jsonpath = require('jsonpath');
+const log = require('../libs/log')(module);
+const { eval, evalTpl } = require('../libs/utils');
 
+/** Class representing a resource */
 module.exports = class Resource {
-  constructor(options, app) {
-    const { headers = {}, params = {}, methods = ['get'], body = null, url, mock = {} } = options;
+  /**
+   * Create a resource
+   * @param {object} opts - Resource's options
+   * @property {string} opts.url - Resource's url
+   * @property {string[]} [opts.methods = ["get"]] - Set of available resource's methods
+   * @property {string} [opts.alias] - Short name for resource
+   * @property {object} [opts.headers = {}] - Default headers for resource, which will be used by default while sending
+   * request
+   * @property {object} [opts.params = {}] - Default query parameters for resource, which will be used by default while
+   * sending request
+   * @property {object} [opts.body = {}] - Default body for resource, which will be used by default while sending
+   * request
+   * @property {object} [opts.mock = {}] - Default mock response, which will be used by default while sending request
+   * @property {object} [opts[get|head|post|put|delete|connect|options|trace|patch]] - Mock object
+   * @todo Maybe additional separation by environment makes sense here [develop|testing|product]
+   * @todo:
+   *  - @property {object} [opts.schemas] - JSON schemas of responses by status
+   *  @property {object} [opts.schemas[get|head|post|put|delete|connect|options|trace|patch]] - Schema for response
+   * @todo Maybe additional separation by environment makes sense here [develop|testing|product]
+   * @param {App} app - An application instance
+   */
+  constructor(opts, app) {
+    const { url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {} } = opts;
 
     this.app = app;
     this.url = url;
-    this.headers = headers
-    this.params = params
+    this.headers = headers;
+    this.params = params;
+    this.body = body;
+    this.mock = mock;
     this.cache = {};
 
-    methods.forEach(method => this[method] = this.create(method, mock[method]));
+    methods.forEach(method => {
+      this[method] = this._create(method);
 
-    if (methods.includes('post')) {
-      this.setBody = body => {
-        log.info('Set body');
-
-        this.cache = {
-          ...(this.cache || {}),
-          body,
-        };
-
-        return this;
-      };
-    } else if (body) {
-      // console.log(body);
-      console.warn('Body is used only with POST or PUT methods');
-    }
+    });
   }
 
+  /**
+   * Set temporary headers for request
+   * @param {object} headers - Headers for request
+   * @returns {Resource} A Resource object
+   */
   setHeaders(headers) {
-    log.info('Set headers');
-
     this.cache = {
       ...(this.cache || {}),
       headers,
@@ -43,9 +58,24 @@ module.exports = class Resource {
     return this;
   }
 
-  setParams(params) {
-    log.info('Set params');
+  /**
+   * Get full headers for request
+   * @returns {object} A headers object
+   */
+  getHeaders(headers) {
+    return {
+      ...this.headers,
+      ...this.cache.headers,
+      ...headers,
+    };
+  }
 
+  /**
+   * Set temporary query parameters for request
+   * @param {object} params - Query parameters for request
+   * @returns {Resource} A Resource object
+   */
+  setParams(params) {
     this.cache = {
       ...(this.cache || {}),
       params,
@@ -54,91 +84,184 @@ module.exports = class Resource {
     return this;
   }
 
-  create(method, mock) {
-    return (opts = {}) => {
-      const { capture, path } = opts;
-      // log.info(`push ${method} to stack`);
-      const that = this;
-
-      if (mock) {
-        return async function mockRequest() {
-          log.info(`send mock ${method}`);
-          that.res = {
-            data: mock,
-          };
-
-          return {
-            res: that,
-            context: {
-              ...(capture ? {[capture.as]: jsonpath.value(mock, capture.json)} : {}),
-            }
-          }
-        }
-      }
-
-      return async function request(context = {}) {
-        log.info(`send ${method}`);
-        const pathParam = !!path && evaluate('`' + path + '`', context);
-
-        // this.url = pathParam ? this.url + pathParam : this.url;
-
-        const res = await axios({
-          url: `${that.app.host.develop}/${that.url}${pathParam || ''}`,
-          method,
-          headers: {
-            ...that.headers,
-            ...that.cache.headers,
-          },
-        });
-
-        that.res = res;
-
-        that.cache = {};
-
-        return {
-          res: that,
-          context: {
-            ...(capture ? {[capture.as]: jsonpath.value(res.data, capture.json)} : {}),
-          },
-        };
-      };
-    };
+  /**
+   * Get full query parameters for request
+   * @returns {object} A query parameters object
+   */
+  getParams() {
+    return this.cache.params || this.params;
   }
 
+  /**
+   * Set temporary body for request
+   * @param {object} body - Body for request
+   * @returns {Resource} A Resource object
+   */
+  setBody(body) {
+    this.cache = {
+      ...(this.cache || {}),
+      body,
+    };
+
+    return this;
+  }
+
+  /**
+   * Get full body for request
+   * @returns {object} A body object
+   */
+  getBody() {
+    return this.cache.body || this.body;
+  }
+
+  /**
+   * Mock response with object
+   * @param {object} mock - A mock object
+   * @returns {Resource} A Resource object
+   */
+  setMock(mock) {
+    this.cache = {
+      ...(this.cache || {}),
+      mock,
+    };
+
+    return this;
+  }
+
+  /**
+   * Get mock for response
+   * @param method
+   * @param mock
+   * @returns {object} A mock object
+   */
+  getMock(method, mock) {
+    return mock || this.cache.mock || this.mock[method];
+  }
+
+  /**
+   * Check response status
+   * @param {(number|string)} expected - Expected status value
+   */
   checkStatus(expected) {
     const { res: { status: actual } } = this;
 
-    assert.equal(actual, expected, `Response status should be equal to ${expected}. ${actual} was received.`);
+    assert.equal(actual, +expected, `Response status should be equal to ${+expected}. ${actual} was received.`);
   }
 
-  checkStructure() {
-    // console.log('structure');
-    return this;
-  }
-
-  checkMessage(message) {
-    // console.log(message);
-    return this;
-  }
-
+  /**
+   * Check response status text
+   * @param {string} expected - Expected statusText value
+   */
   checkStatusText(expected) {
     const { res: { statusText: actual } } = this;
 
     assert.equal(actual, expected, `Response statusText should be equal to ${expected}. ${actual} was received`);
   }
 
-  checkHeader(header) {
-    // console.log(header);
-    return this;
+  /**
+   * Check response body by schema
+   */
+  checkStructure() {
+    // @todo implement checking of response with JSON schema
   }
 
-  check(condition) {
-    return assert.equal(condition(this.res.data), true, `${condition.toString()} returns false, expected to be true`);
+  /**
+   * Check response headers
+   * @param {object} expected - Expected headers object
+   */
+  checkHeaders(expected) {
+    // @todo implement checking of headers
+  }
+
+  /**
+   * Check response message
+   * @param {string} expected - Expected message value
+   */
+  checkMessage(expected) {
+    // @todo implement checking of message
+  }
+
+  /**
+   * Check response by custom checking function
+   * @param {function} fn - Custom checking function
+   * @param {object} ctx - Execution context
+   */
+  check(fn, ctx) {
+    return assert.equal(
+      fn(this.res.data, ctx),
+      true,
+      `${fn.toString()} returns false, expected to be true`
+    );
+  }
+
+  /**
+   * Create method for Resource
+   * @param {string} method - Method name for registration in Resource
+   * @returns {function(*=): function(*=): module.Resource}
+   * @private
+   */
+  _create(method) {
+    return (opts = {}) => {
+      const self = this;
+      const mediumPriorityMock = this.cache.mock;
+
+      return async function request(context = {}) {
+        const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
+        const pathParam = !!path && evalTpl(path, context);
+
+        self.res = self.getMock(method, mock)
+          ? {
+            headers: self.getHeaders(headers),
+            data: self.getMock(method, mock),
+            // @todo Provide status, statusText, message, body data from mock object
+          }
+          : await axios({
+            url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
+            method,
+            headers: self.getHeaders(headers),
+          });
+        self.cache = {};
+        self.snapshot = captureData(capture, self.res);
+
+        return self;
+      }
+    };
   }
 };
 
-function evaluate(code, context = {}) {
-  const func = new Function(`with(this) { return ${code} }`);
+/**
+ * @function captureData - Capture data from response to context
+ * @param capture
+ * @param requestData
+ * @returns {object|object[]} - Captured data from response
+ */
+function captureData(capture, requestData) {
+  if (!capture) return {};
 
-  return func.call(context);
+  if (Array.isArray(capture)) {
+    return capture.reduce((accruedData, { json, as }) => ({
+      ...accruedData,
+      [as]: getValue(json, requestData),
+    }), {});
+  }
+
+  const { as, json } = capture;
+
+  return {
+    [as]: getValue(json, requestData),
+  }
+}
+
+/**
+ * @function getValue - Get value from object by JsonPath
+ * @param jsonPath
+ * @param obj
+ * @returns {*}
+ */
+function getValue(jsonPath, obj) {
+  const rootObj = jsonPath.startsWith('#')
+    ? obj.headers
+    : obj.data;
+
+  return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
