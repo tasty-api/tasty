@@ -30,14 +30,9 @@ if (require.main === module) {
     dir,
     (err, files) => {
       files.forEach((file) => mocha.addFile(file))
-      mocha.run();
+      mocha.run(); // @todo Add opportunity to run tests in parallel or series
     }
   );
-
-  // const tests = requireDir(dir, {
-  //   recursive: true,
-  //   noCache: true,
-  // });
 
   log.info('Start testing');
   log.info('Finish testing.');
