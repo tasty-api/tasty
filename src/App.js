@@ -39,13 +39,15 @@ module.exports = class App {
    * Declare an application resource
    * @param {object} opts - Resource's options
    * @property {string} opts.url - Resource's url
-   * @property {string} [opts.alias] - Short name for resource
-   * @property {object} [opts.headers] - Default headers for resource, which will be used by default while sending
-   * request
-   * @property {object} [opts.params] - Default query parameters for resource, which will be used by default while
-   * sending request
    * @property {string[]} [opts.methods = ["get"]] - Set of available resource's methods
-   * @property {object} [opts.mock] - Default mock response, which will be used by default while sending request
+   * @property {string} [opts.alias] - Short name for resource
+   * @property {object} [opts.headers = {}] - Default headers for resource, which will be used by default while sending
+   * request
+   * @property {object} [opts.params = {}] - Default query parameters for resource, which will be used by default while
+   * sending request
+   * @property {object} [opts.body = {}] - Default body for resource, which will be used by default while sending
+   * request
+   * @property {object} [opts.mock = {}] - Default mock response, which will be used by default while sending request
    * @property {object} [opts[get|head|post|put|delete|connect|options|trace|patch]] - Mock object
    * @todo Maybe additional separation by environment makes sense here [develop|testing|product]
    * @todo:
