@@ -9,6 +9,7 @@ module.exports = {
   App: require('./src/App'),
   tasty: new (require('./src/Tasty')),
   Runner: require('./src/Runner'),
+  Services: require('./src/Services'),
 };
 
 if (require.main === module) {
