@@ -2,14 +2,13 @@
 
 const path = require('path');
 const requireDir = require('require-dir');
-const log = require('./libs/log')(module);
 const { name, major, minor, patch, codename } = require('./app');
-const Mocha = require('mocha');
-const recursive = require('recursive-readdir');
+const Runner = require('./src/Runner');
 
 module.exports = {
   App: require('./src/App'),
   tasty: new (require('./src/Tasty')),
+  Runner: require('./src/Runner'),
 };
 
 if (require.main === module) {
@@ -22,18 +21,10 @@ if (require.main === module) {
 
   const { dir } = program;
 
-  log.info(`Test path is ${dir}`);
+  const runner = new Runner(dir);
 
-  const mocha = new Mocha();
-
-  recursive(
-    dir,
-    (err, files) => {
-      files.forEach((file) => mocha.addFile(file))
-      mocha.run(); // @todo Add opportunity to run tests in parallel or series
-    }
-  );
-
-  log.info('Start testing');
-  log.info('Finish testing.');
+  runner.run()
+    .then(stats => {
+      console.log(stats);
+    });
 }
