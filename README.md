@@ -2,13 +2,31 @@
 
 TastyJS is an API testing framework which will make your testing process tastier.
 
-Tasty doesn't pretend to be a Swizz knife in testing world. It's a syntactic sugar under mocha and other testing kitchen
+TastyJS doesn't pretend to be a Swizz knife in testing world. It's a syntactic sugar under mocha and other testing kitchen
 staff related to api testing. The main goal is make api testing process as easier as it possible.
 
 You don't need to know anything about testing standards, dictionary, and community conventions.
 
 You just write, what you hear.
 
+This tool limits the number of degrees of freedom. In this case, if you a programming geek, here you will be cramped.
+If you want to focus on the essence of api testing, and want to increase the speed of this process, this tool is for you.
+
+## PoC
+
+`TastyJS` provides unified approach for development, support and testing REST API endpoints
+
+`TastyJS` is built on top `Application` abstraction  
+Every `Application` has list of `Resources`  
+one `Resouce` describe single REST API url - `path` and related configuration  
+
+There is `Service` - mock abstraction for `Resource`, that allow to declare required `Resource` headers, status codes, response in declarative maner and use for TDD development  
+
+`TastyJS` provides interface for testing each `Resource` with specific api:
+
+### TEST API
+
+Simple test:
 ```javascript
 import tasty from 'tasty';
 import app from '../app';
@@ -52,6 +70,3 @@ tasty.case('Tests for /product',
   app.logout.post(),
 );
 ```
-
-This tool limits the number of degrees of freedom. In this case, if you a programming geek, here you will be cramped.
-If you want to focus on the essence of api testing, and want to increase the speed of this process, this tool is for you.
