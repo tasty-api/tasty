@@ -3,7 +3,7 @@
 TastyJS is an API testing framework which will make your testing process tastier.
 
 TastyJS doesn't pretend to be a Swizz knife in testing world. It's a syntactic sugar above mocha and other testing kitchen
-staff related to api testing. The main goal is make api testing process as easier as it possible.
+stuf related to api testing. The main goal is make api testing process as easier as it possible.
 
 You don't need to know anything about testing standards, dictionary, and community conventions.
 
