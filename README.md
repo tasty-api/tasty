@@ -1,6 +1,5 @@
 <p align="center">
   <img src="src/assets/logo.svg" >
-  <p align="center">The API testing framework</p>
 </p>
 
 
