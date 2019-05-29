@@ -1,7 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/adeo/tasty/master/assets/src/logo.svg" />
-  <p align="center">The API testing framework</p>
+  <img src="src/assets/logo.svg" >
 </p>
+
+
 # TastyJS
 
 TastyJS is an API testing framework which will make your testing process tastier.
