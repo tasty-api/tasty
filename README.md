@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/adeo/tasty/master/assets/src/logo.svg" />
+  <img src="https://raw.githubusercontent.com/adeo/tasty/master/src/assets/logo.svg" />
   <p align="center">The API testing framework</p>
 </p>
 # TastyJS
