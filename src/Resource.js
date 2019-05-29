@@ -1,6 +1,7 @@
 const axios = require('axios');
 const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
+const Ajv = require('ajv');
 const log = require('../libs/log')(module);
 const { eval, evalTpl } = require('../libs/utils');
 
@@ -28,7 +29,7 @@ module.exports = class Resource {
    * @param {App} app - An application instance
    */
   constructor(opts, app) {
-    const { url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {} } = opts;
+    const { url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {}, schemas = {} } = opts;
 
     this.app = app;
     this.url = url;
@@ -36,6 +37,7 @@ module.exports = class Resource {
     this.params = params;
     this.body = body;
     this.mock = mock;
+    this.schemas = schemas;
     this.cache = {};
 
     methods.forEach(method => {
@@ -139,6 +141,16 @@ module.exports = class Resource {
   }
 
   /**
+   * @todo JSDoc
+   * @param {string} method
+   * @param {number} responseCode
+   */
+  getSchema(method, responseCode) {
+    // @todo add check
+    return this.schemas[method][responseCode];
+  }
+
+  /**
    * Check response status
    * @param {(number|string)} expected - Expected status value
    */
@@ -161,8 +173,12 @@ module.exports = class Resource {
   /**
    * Check response body by schema
    */
-  checkStructure() {
-    // @todo implement checking of response with JSON schema
+  checkStructure(jsonSchema) {
+    const { res } = this;
+    const ajv = new Ajv();
+    const validate = ajv.validate(jsonSchema, res.data);
+
+    assert.isTrue(validate, ajv.errorsText())
   }
 
   /**

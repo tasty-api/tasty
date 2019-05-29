@@ -19,6 +19,7 @@
   "license": "ISC",
   "bin": "./index.js",
   "dependencies": {
+    "ajv": "^6.10.0",
     "async": "^2.6.2",
     "axios": "^0.18.0",
     "chai": "^4.2.0",
