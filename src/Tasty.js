@@ -16,7 +16,7 @@ class Tasty {
   /**
    * Describe a test case
    * @param {string} title - Test case title
-   * @param {*[]} actions - Test actions
+   * @param {function[]} actions - Test actions
    */
   case(title, ...actions) {
     this.context = {};
@@ -60,7 +60,7 @@ class Tasty {
 
   /**
    * Describe a set of actions
-   * @param {*[]} actions - Test actions, which will be done in series
+   * @param {function[]} actions - Test actions, which will be done in series
    * @returns {function} Function which sent request in series
    */
   series(...actions) {
@@ -81,7 +81,7 @@ class Tasty {
 
   /**
    * Describe a set of action
-   * @param {*[]} actions - Test actions, which will be done in parallel
+   * @param {function[]} actions - Test actions, which will be done in parallel
    * @returns {function} Function which sent request in parallel
    */
   parallel(...actions) {
@@ -189,7 +189,7 @@ module.exports = Tasty;
 
 /**
  * @function splitActions - Split action on three five groups
- * @param {*[]} actions - Tests actions
+ * @param {function[]} actions - Tests actions
  * @returns {object} - Object with actions' groups
  */
 function splitActions(actions) {

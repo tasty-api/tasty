@@ -4,7 +4,8 @@
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha"
+    "test": "nyc mocha",
+    "doc": "jsdoc2md --no-gfm --files ./src/** >> ./docs/api2.md"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
     "chai": "^4.2.0",
     "commander": "^2.19.0",
     "esprima": "^4.0.1",
+    "jsdoc-to-markdown": "^5.0.0",
     "jsonpath": "^1.0.1",
     "mocha": "^6.1.3",
     "recursive-readdir": "^2.2.2",

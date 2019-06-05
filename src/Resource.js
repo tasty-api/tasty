@@ -3,10 +3,10 @@ const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
 const Ajv = require('ajv');
 const log = require('../libs/log')(module);
-const { eval, evalTpl } = require('../libs/utils');
+const { evalTpl } = require('../libs/utils');
 
 /** Class representing a resource */
-module.exports = class Resource {
+class Resource {
   /**
    * Create a resource
    * @param {object} opts - Resource's options
@@ -281,3 +281,5 @@ function getValue(jsonPath, obj) {
 
   return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
+
+module.exports = Resource;

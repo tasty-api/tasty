@@ -4,7 +4,7 @@ const recursive = require('recursive-readdir');
 const FUNC = 'func';
 
 /** Class representing a test runner */
-module.exports = class Runner {
+class Runner {
   /**
    * Create a test runner
    * @param {string} [dir = '/test'] - Path to functional tests directory
@@ -42,3 +42,5 @@ module.exports = class Runner {
     // @todo Make filtration
   }
 };
+
+module.exports = Runner;

@@ -2,7 +2,7 @@ const path = require('path');
 const requireDir = require('require-dir');
 const Service = require('./Service');
 
-module.exports = class Services {
+class Services {
   init(srcDir = path.join(process.cwd(), 'services')) {
     requireDir(srcDir, {
       recurse: true,
@@ -13,3 +13,5 @@ module.exports = class Services {
     this[name] = new Service(opts);
   }
 };
+
+module.exports = Services;
