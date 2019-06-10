@@ -3,7 +3,9 @@ const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
 const Ajv = require('ajv');
 const log = require('../libs/log')(module);
-const { eval, evalTpl } = require('../libs/utils');
+const {eval, evalTpl} = require('../libs/utils');
+const LOAD = 'load';
+const artillery = require('./types/load/artillery');
 
 /** Class representing a resource */
 module.exports = class Resource {
@@ -29,7 +31,7 @@ module.exports = class Resource {
    * @param {App} app - An application instance
    */
   constructor(opts, app) {
-    const { url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {}, schemas = {} } = opts;
+    const {url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {}, schemas = {}} = opts;
 
     this.app = app;
     this.url = url;
@@ -90,8 +92,12 @@ module.exports = class Resource {
    * Get full query parameters for request
    * @returns {object} A query parameters object
    */
-  getParams() {
-    return this.cache.params || this.params;
+  getParams(params) {
+    return {
+      ...this.params,
+      ...this.cache.params,
+      ...params,
+    };
   }
 
   /**
@@ -112,8 +118,12 @@ module.exports = class Resource {
    * Get full body for request
    * @returns {object} A body object
    */
-  getBody() {
-    return this.cache.body || this.body;
+  getBody(body) {
+    return {
+      ...this.body,
+      ...this.cache.body,
+      ...body,
+    };
   }
 
   /**
@@ -155,7 +165,7 @@ module.exports = class Resource {
    * @param {(number|string)} expected - Expected status value
    */
   checkStatus(expected) {
-    const { res: { status: actual } } = this;
+    const {res: {status: actual}} = this;
 
     assert.equal(actual, +expected, `Response status should be equal to ${+expected}. ${actual} was received.`);
   }
@@ -165,7 +175,7 @@ module.exports = class Resource {
    * @param {string} expected - Expected statusText value
    */
   checkStatusText(expected) {
-    const { res: { statusText: actual } } = this;
+    const {res: {statusText: actual}} = this;
 
     assert.equal(actual, expected, `Response statusText should be equal to ${expected}. ${actual} was received`);
   }
@@ -174,7 +184,7 @@ module.exports = class Resource {
    * Check response body by schema
    */
   checkStructure(jsonSchema) {
-    const { res } = this;
+    const {res} = this;
     const ajv = new Ajv();
     const validate = ajv.validate(jsonSchema, res.data);
 
@@ -217,31 +227,47 @@ module.exports = class Resource {
    * @private
    */
   _create(method) {
-    return (opts = {}) => {
-      const self = this;
-      const mediumPriorityMock = this.cache.mock;
+    if (process.env.type === LOAD) {
+      return (opts = {}) => {
+        const struct = {
+          capture:opts.capture,
+          path: opts.path ? this.url + opts.path : this.url,
+          headers: this.getHeaders(opts.headers),
+          params: this.getParams(opts.params),
+          body: this.getBody(opts.body)
+        };
 
-      return async function request(context = {}) {
-        const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
-        const pathParam = !!path && evalTpl(path, context);
+        // ...
+        //create instance of single request
+        return (new artillery.SingleRequest({method, ...struct})).get();
+      };
+    } else {
+      return (opts = {}) => {
+        const self = this;
+        const mediumPriorityMock = this.cache.mock;
 
-        self.res = self.getMock(method, mock)
-          ? {
-            headers: self.getHeaders(headers),
-            data: self.getMock(method, mock),
-            // @todo Provide status, statusText, message, body data from mock object
-          }
-          : await axios({
-            url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
-            method,
-            headers: self.getHeaders(headers),
-          });
-        self.cache = {};
-        self.snapshot = captureData(capture, self.res);
+        return async function request(context = {}) {
+          const {capture, path, headers, params, body, mock} = opts; // @todo Handle all options with evalTpl
+          const pathParam = !!path && evalTpl(path, context);
 
-        return self;
-      }
-    };
+          self.res = self.getMock(method, mock)
+            ? {
+              headers: self.getHeaders(headers),
+              data: self.getMock(method, mock),
+              // @todo Provide status, statusText, message, body data from mock object
+            }
+            : await axios({
+              url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
+              method,
+              headers: self.getHeaders(headers),
+            });
+          self.cache = {};
+          self.snapshot = captureData(capture, self.res);
+
+          return self;
+        }
+      };
+    }
   }
 };
 
@@ -255,13 +281,13 @@ function captureData(capture, requestData) {
   if (!capture) return {};
 
   if (Array.isArray(capture)) {
-    return capture.reduce((accruedData, { json, as }) => ({
+    return capture.reduce((accruedData, {json, as}) => ({
       ...accruedData,
       [as]: getValue(json, requestData),
     }), {});
   }
 
-  const { as, json } = capture;
+  const {as, json} = capture;
 
   return {
     [as]: getValue(json, requestData),
