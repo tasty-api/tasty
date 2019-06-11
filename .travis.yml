@@ -1,0 +1,12 @@
+dist: xenial
+language: node_js
+node_js:
+  - "11.0.0"
+script:
+  - npm test
+deploy:
+  provider: npm
+  #email: ""
+  #api_key: ""
+  on:
+    tags: true
