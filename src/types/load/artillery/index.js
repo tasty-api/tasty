@@ -138,7 +138,7 @@ class Artillery {
   }
 
 
-//@todo make refactoring!!!
+  //@todo make refactoring!!!
   /**
    *
    * @param fullPath
@@ -197,13 +197,13 @@ class Scenario {
     if (flowObject.flow) {
       this.scenarios.push(flowObject);
     } else {
-      this.scenarios.push({flow: flowObject});
+      this.scenarios.push({ flow: flowObject });
     }
     return this;
   }
 
   get() {
-    return {scenarios: this.scenarios};
+    return { scenarios: this.scenarios };
   };
 }
 
@@ -240,7 +240,7 @@ class HttpFlow {
    * @returns {{flow: Array}}
    */
   get() {
-    return {flow: this.flow};
+    return { flow: this.flow };
   }
 
   /**
@@ -269,13 +269,13 @@ class HttpFlow {
   }
 
   addWaitSection(secondsCount) {
-    const instance = (new SingleRequest({think: secondsCount})).get();
+    const instance = (new SingleRequest({ think: secondsCount })).get();
     this.flow.push(instance);
     return this;
   }
 
   addLogSection(logMessage) {
-    const instance = (new SingleRequest({log: logMessage})).get();
+    const instance = (new SingleRequest({ log: logMessage })).get();
     this.flow.push(instance);
     return this;
   }
@@ -295,14 +295,14 @@ class SingleRequest { //flow action
    *
    * @param {object} requestObject - an object like {get:{url:"/pets"}}
    */
-  constructor({method, path, body, headers, params, capture} = {}) {
+  constructor({ method, path, body, headers, params, capture } = {}) {
     //@todo add json schema object validation for incoming requestObject
     /*this.avaliableTypes = new Set(['get', 'post', 'put', 'patch', 'delete', 'log', 'think']);*/
     this.request = {};
     if(arguments[0] && Object.keys(arguments[0]).length) {
       if (method) {
         this.name = method;
-        this._keys = [{path: "url"}];
+        this._keys = [{ path: 'url' }];
 
         this.request = {
           [method]: {
@@ -317,7 +317,7 @@ class SingleRequest { //flow action
         }
         if (params && Object.keys(params).length) {
           //@todo not implemented
-          this.request._params = {...params};
+          this.request._params = { ...params };
           this._changeValuesForArtilleryConfig();
           this.request[method].url += '?' + qs.stringify(this.request._params);
           delete this.request._params;
@@ -399,7 +399,7 @@ class SingleRequest { //flow action
    * @returns {SingleRequest}
    */
   addHeaders(headers) {
-    this.request[this.name].headers = {...this.request.headers, ...headers};
+    this.request[this.name].headers = { ...this.request.headers, ...headers };
     return this;
   }
 
@@ -530,7 +530,7 @@ class SingleRequest { //flow action
           //return object as it is: only replace strings
           return object;
         }
-      }
+      };
     }
 
     this.request = iterateWithExceptions('capture')(this.request);
@@ -649,9 +649,9 @@ class SingleRequest { //flow action
  */
 class TastyAdapter{
   log(message){
-    return {log:SingleRequest._searchAndReplaceForArtillery(message)};
+    return { log:SingleRequest._searchAndReplaceForArtillery(message) };
   };
-  think(seconds){return {think: Number(seconds)}};
+  think(seconds){return { think: Number(seconds) };};
 }
 
 

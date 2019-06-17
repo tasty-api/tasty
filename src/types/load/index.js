@@ -1,5 +1,5 @@
 const artilleryRunner = require('lmartillery');
-const {promisify} = require('util');
+const { promisify } = require('util');
 const loadRun = promisify(artilleryRunner.run);
 const path = require('path');
 const fs = require('fs');
@@ -17,7 +17,7 @@ module.exports.get = async (files) => {
  */
 module.exports.run = async (config, pathToSaveFile) => {
   const resultFile = path.resolve(path.join(pathToSaveFile, './._load.tmp.output.json'));
-  const results = await loadRun(config, {output: resultFile,quiet:true});
-  artilleryRunner.report(resultFile,{});
+  const results = await loadRun(config, { output: resultFile, quiet:true });
+  artilleryRunner.report(resultFile, {});
   return true;
 };

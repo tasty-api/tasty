@@ -1,7 +1,7 @@
-const {promisify} = require('util');
+const { promisify } = require('util');
 const waterfall = promisify(require('async/waterfall'));
 const parallel = promisify(require('async/parallel'));
-const {evalTpl} = require('../libs/utils');
+const { evalTpl } = require('../libs/utils');
 const artillery = require('./types/load/artillery');
 
 /** Class representing a Tasty library */
@@ -177,19 +177,19 @@ class Tasty {
         });
 
         suites.forEach((suite, i) => {
-          it(evalTpl(title, {suite}), () => {
+          it(evalTpl(title, { suite }), () => {
             Object.keys(assertions).forEach(key => {
               const assertion = typeof assertions[key] === 'string'
-                ? evalTpl(assertions[key], {suite})
+                ? evalTpl(assertions[key], { suite })
                 : assertions[key];
 
-              responses[i][key](assertion, {suite});
+              responses[i][key](assertion, { suite });
             });
           });
         });
       } else {
         suites.forEach((suite) => {
-          it(evalTpl(title, {suite}), async () => {
+          it(evalTpl(title, { suite }), async () => {
             const resource = await request({
               ...self.context,
               suite,
@@ -197,10 +197,10 @@ class Tasty {
 
             Object.keys(assertions).forEach(key => {
               const assertion = typeof assertions[key] === 'string'
-                ? evalTpl(assertions[key], {suite})
+                ? evalTpl(assertions[key], { suite })
                 : assertions[key];
 
-              resource[assertion](key, {suite});
+              resource[assertion](key, { suite });
             });
           });
         });
@@ -209,7 +209,7 @@ class Tasty {
   }
 }
 
-module.exports = mixClasses(Tasty,artillery.TastyAdapter);
+module.exports = mixClasses(Tasty, artillery.TastyAdapter);
 
 /**
  * @function splitActions - Split action on three five groups

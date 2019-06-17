@@ -3,7 +3,7 @@ const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
 const Ajv = require('ajv');
 const log = require('../libs/log')(module);
-const { evalTpl} = require('../libs/utils');
+const { evalTpl } = require('../libs/utils');
 const LOAD = 'load';
 const artillery = require('./types/load/artillery');
 
@@ -31,7 +31,7 @@ class Resource {
    * @param {App} app - An application instance
    */
   constructor(opts, app) {
-    const {url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {}, schemas = {}} = opts;
+    const { url, methods = ['get'], headers = {}, params = {}, body = {}, mock = {}, schemas = {} } = opts;
 
     this.app = app;
     this.url = url;
@@ -83,7 +83,7 @@ class Resource {
     this.cache = {
       ...(this.cache || {}),
       params,
-    }
+    };
 
     return this;
   }
@@ -188,7 +188,7 @@ class Resource {
     const ajv = new Ajv();
     const validate = ajv.validate(jsonSchema, res.data);
 
-    assert.isTrue(validate, ajv.errorsText())
+    assert.isTrue(validate, ajv.errorsText());
   }
 
   /**
@@ -239,7 +239,7 @@ class Resource {
 
         // ...
         //create instance of single request
-        return (new artillery.SingleRequest({method, ...struct})).get();
+        return (new artillery.SingleRequest({ method, ...struct })).get();
       };
     } else {
       return (opts = {}) => {
@@ -247,7 +247,7 @@ class Resource {
         const mediumPriorityMock = this.cache.mock;
 
         return async function request(context = {}) {
-          const {capture, path, headers, params, body, mock} = opts; // @todo Handle all options with evalTpl
+          const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
           const pathParam = !!path && evalTpl(path, context);
 
           self.res = self.getMock(method, mock)
@@ -265,7 +265,7 @@ class Resource {
           self.snapshot = captureData(capture, self.res);
 
           return self;
-        }
+        };
       };
     }
   }
@@ -291,7 +291,7 @@ function captureData(capture, requestData) {
 
   return {
     [as]: getValue(json, requestData),
-  }
+  };
 }
 
 /**

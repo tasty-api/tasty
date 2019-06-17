@@ -4,14 +4,14 @@ const recursive = require('recursive-readdir');
 const log = require('../libs/log')(module);
 const artillery = require('./types/load/artillery');
 const fs = require('fs');
-const {promisify} = require('util');
+const { promisify } = require('util');
 
 const DEFAULT_TYPE = 'func';
 
 
 const required = (param = null, defaultValue = null) => {
   if (!defaultValue) {
-    throw new Error(param ? `missing parameter: ${param}` : `missing parameter`);
+    throw new Error(param ? `missing parameter: ${param}` : 'missing parameter');
   }
   return defaultValue;
 };
@@ -42,7 +42,7 @@ class Runner {
     process.env.type = type;
     const _config = require(path.resolve(process.cwd(), config));
 
-    const {get, run} = require(`./types/${type}`);
+    const { get, run } = require(`./types/${type}`);
     const testsFiles = await this._getTestsFiles(type);
     let tests = await get(testsFiles);
 
