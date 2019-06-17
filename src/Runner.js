@@ -17,7 +17,7 @@ const required = (param = null, defaultValue = null) => {
 };
 
 /** Class representing a test runner */
-module.exports = class Runner {
+class Runner {
   /**
    * Create a test runner
    * @param {string} [dir = '/test/[type]'] - Path to functional tests directory
@@ -87,3 +87,5 @@ module.exports = class Runner {
     // @todo Make filtration
   }
 };
+
+module.exports = Runner;

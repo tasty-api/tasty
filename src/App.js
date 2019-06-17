@@ -4,7 +4,7 @@ const log = require('../libs/log')(module);
 const Resource = require('./Resource');
 
 /** Class representing an application */
-module.exports = class App {
+class App {
   /**
    * Create an application
    * @param {string} name - Application name
@@ -61,3 +61,5 @@ module.exports = class App {
     this[alias || url] = new Resource(opts, this);
   }
 };
+
+module.exports = App;

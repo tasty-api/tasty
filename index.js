@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const requireDir = require('require-dir');
 const { name, major, minor, patch, codename } = require('./app');
 const Runner = require('./src/Runner');
 //const config = require('./config');
@@ -28,6 +27,7 @@ if (require.main === module) {
     .option('-d, --dir [path]', 'specify a directory', false)
     .option('-t, --type [type_of_test]','specify type of a test (func | load) ','func')  //@ setting the dafault value for the type of test: func(functional)
     .option('-c, --config [path_to_config]', 'specify path to artillery configuration file',null)
+    .option('-p, --parallel [true/false]', 'specify a run mode', false)
     .parse(process.argv);
 
   // check whether our type matches one of the types:
@@ -59,7 +59,4 @@ if (require.main === module) {
       });
   }
 
-}
-else{
-  console.log()
 }

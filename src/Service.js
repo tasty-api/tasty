@@ -5,7 +5,7 @@ const { evalTpl } = require('../libs/utils');
 const Resource = require('./Resource');
 
 /** Class representing external service */
-module.exports = class Service extends Resource {
+class Service extends Resource {
   /**
    * Create external service
    * @param {object} opts - Options for service
@@ -56,7 +56,7 @@ module.exports = class Service extends Resource {
       return self;
     };
   }
-};
+}
 
 function captureData(capture, requestData) {
   if (!capture) return {};
@@ -72,7 +72,7 @@ function captureData(capture, requestData) {
 
   return {
     [as]: getValue(json, requestData),
-  }
+  };
 }
 
 function getValue(jsonPath, obj) {
@@ -82,3 +82,5 @@ function getValue(jsonPath, obj) {
 
   return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
+
+module.exports = Service;

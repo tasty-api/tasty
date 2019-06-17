@@ -3,12 +3,12 @@ const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
 const Ajv = require('ajv');
 const log = require('../libs/log')(module);
-const {eval, evalTpl} = require('../libs/utils');
+const { evalTpl} = require('../libs/utils');
 const LOAD = 'load';
 const artillery = require('./types/load/artillery');
 
 /** Class representing a resource */
-module.exports = class Resource {
+class Resource {
   /**
    * Create a resource
    * @param {object} opts - Resource's options
@@ -165,7 +165,7 @@ module.exports = class Resource {
    * @param {(number|string)} expected - Expected status value
    */
   checkStatus(expected) {
-    const {res: {status: actual}} = this;
+    const { res: { status: actual } } = this;
 
     assert.equal(actual, +expected, `Response status should be equal to ${+expected}. ${actual} was received.`);
   }
@@ -175,7 +175,7 @@ module.exports = class Resource {
    * @param {string} expected - Expected statusText value
    */
   checkStatusText(expected) {
-    const {res: {statusText: actual}} = this;
+    const { res: { statusText: actual } } = this;
 
     assert.equal(actual, expected, `Response statusText should be equal to ${expected}. ${actual} was received`);
   }
@@ -184,7 +184,7 @@ module.exports = class Resource {
    * Check response body by schema
    */
   checkStructure(jsonSchema) {
-    const {res} = this;
+    const { res } = this;
     const ajv = new Ajv();
     const validate = ajv.validate(jsonSchema, res.data);
 
@@ -281,13 +281,13 @@ function captureData(capture, requestData) {
   if (!capture) return {};
 
   if (Array.isArray(capture)) {
-    return capture.reduce((accruedData, {json, as}) => ({
+    return capture.reduce((accruedData, { json, as }) => ({
       ...accruedData,
       [as]: getValue(json, requestData),
     }), {});
   }
 
-  const {as, json} = capture;
+  const { as, json } = capture;
 
   return {
     [as]: getValue(json, requestData),
@@ -307,3 +307,5 @@ function getValue(jsonPath, obj) {
 
   return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
+
+module.exports = Resource;
