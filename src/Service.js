@@ -56,7 +56,7 @@ class Service extends Resource {
       return self;
     };
   }
-};
+}
 
 function captureData(capture, requestData) {
   if (!capture) return {};
@@ -72,7 +72,7 @@ function captureData(capture, requestData) {
 
   return {
     [as]: getValue(json, requestData),
-  }
+  };
 }
 
 function getValue(jsonPath, obj) {

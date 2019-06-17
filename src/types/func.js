@@ -3,6 +3,7 @@ const path = require('path');
 const { promisify } = require('util');
 const concat = promisify(require('async/concat'));
 const concatSeries = promisify(require('async/concatSeries'));
+const get = require('lodash.get');
 
 module.exports.get = async (files) => {
   const reportDir = Date.now();
@@ -41,8 +42,8 @@ function runTest(test, cb) {
 
 function formatStats(stats, isParallel) {
   const res = {
-    start: stats[0].start,
-    end: isParallel ? null : stats[stats.length - 1].end,
+    start: get(stats, '[0].start', 0),
+    end: isParallel ? null : get(stats, `[${stats.length - 1}].end`, 0),
     suites: 0,
     tests: 0,
     passes: 0,
@@ -52,17 +53,17 @@ function formatStats(stats, isParallel) {
   };
 
   stats.forEach((stat) => {
-    res.suites += stat.suites;
-    res.tests += stat.tests;
-    res.passes += stat.passes;
-    res.pending += stat.pending;
-    res.failures += stat.failures;
+    res.suites += get(stat, 'suites', 0);
+    res.tests += get(stat, 'tests', 0);
+    res.passes += get(stat, 'passes', 0);
+    res.pending += get(stat, 'pending', 0);
+    res.failures += get(stat, 'failures');
 
     if (isParallel) {
-      res.end = stat.duration > res.duration ? stat.end : res.end;
-      res.duration = stat.duration > res.duration ? stat.duration : res.duration;
+      res.end = get(stat, 'duration', 0) > res.duration ? get(stat, 'end', 0) : res.end;
+      res.duration = get(stat, 'duration', 0) > res.duration ? get(stat, 'duration', 0) : res.duration;
     } else {
-      res.duration += stat.duration;
+      res.duration += get(stat, 'duration', 0);
     }
   });
 
