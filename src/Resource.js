@@ -4,6 +4,8 @@ const jsonpath = require('jsonpath');
 const Ajv = require('ajv');
 const log = require('../libs/log')(module);
 const { evalTpl } = require('../libs/utils');
+const LOAD = 'load';
+const artillery = require('./types/load/artillery');
 
 /** Class representing a resource */
 class Resource {
@@ -81,7 +83,7 @@ class Resource {
     this.cache = {
       ...(this.cache || {}),
       params,
-    }
+    };
 
     return this;
   }
@@ -90,8 +92,12 @@ class Resource {
    * Get full query parameters for request
    * @returns {object} A query parameters object
    */
-  getParams() {
-    return this.cache.params || this.params;
+  getParams(params) {
+    return {
+      ...this.params,
+      ...this.cache.params,
+      ...params,
+    };
   }
 
   /**
@@ -112,8 +118,12 @@ class Resource {
    * Get full body for request
    * @returns {object} A body object
    */
-  getBody() {
-    return this.cache.body || this.body;
+  getBody(body) {
+    return {
+      ...this.body,
+      ...this.cache.body,
+      ...body,
+    };
   }
 
   /**
@@ -178,7 +188,7 @@ class Resource {
     const ajv = new Ajv();
     const validate = ajv.validate(jsonSchema, res.data);
 
-    assert.isTrue(validate, ajv.errorsText())
+    assert.isTrue(validate, ajv.errorsText());
   }
 
   /**
@@ -217,31 +227,47 @@ class Resource {
    * @private
    */
   _create(method) {
-    return (opts = {}) => {
-      const self = this;
-      const mediumPriorityMock = this.cache.mock;
+    if (process.env.type === LOAD) {
+      return (opts = {}) => {
+        const struct = {
+          capture:opts.capture,
+          path: opts.path ? this.url + opts.path : this.url,
+          headers: this.getHeaders(opts.headers),
+          params: this.getParams(opts.params),
+          body: this.getBody(opts.body)
+        };
 
-      return async function request(context = {}) {
-        const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
-        const pathParam = !!path && evalTpl(path, context);
+        // ...
+        //create instance of single request
+        return (new artillery.SingleRequest({ method, ...struct })).get();
+      };
+    } else {
+      return (opts = {}) => {
+        const self = this;
+        const mediumPriorityMock = this.cache.mock;
 
-        self.res = self.getMock(method, mock)
-          ? {
-            headers: self.getHeaders(headers),
-            data: self.getMock(method, mock),
-            // @todo Provide status, statusText, message, body data from mock object
-          }
-          : await axios({
-            url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
-            method,
-            headers: self.getHeaders(headers),
-          });
-        self.cache = {};
-        self.snapshot = captureData(capture, self.res);
+        return async function request(context = {}) {
+          const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
+          const pathParam = !!path && evalTpl(path, context);
 
-        return self;
-      }
-    };
+          self.res = self.getMock(method, mock)
+            ? {
+              headers: self.getHeaders(headers),
+              data: self.getMock(method, mock),
+              // @todo Provide status, statusText, message, body data from mock object
+            }
+            : await axios({
+              url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
+              method,
+              headers: self.getHeaders(headers),
+            });
+          self.cache = {};
+          self.snapshot = captureData(capture, self.res);
+
+          return self;
+        };
+      };
+    }
   }
 };
 
@@ -265,7 +291,7 @@ function captureData(capture, requestData) {
 
   return {
     [as]: getValue(json, requestData),
-  }
+  };
 }
 
 /**

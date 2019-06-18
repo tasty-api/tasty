@@ -2,6 +2,7 @@ const { promisify } = require('util');
 const waterfall = promisify(require('async/waterfall'));
 const parallel = promisify(require('async/parallel'));
 const { evalTpl } = require('../libs/utils');
+const artillery = require('./types/load/artillery');
 
 /** Class representing a Tasty library */
 class Tasty {
@@ -19,43 +20,52 @@ class Tasty {
    * @param {function[]} actions - Test actions
    */
   case(title, ...actions) {
+    //@todo case of load test!
+    //
     this.context = {};
 
     const sets = splitActions(actions);
 
-    describe(title, () => {
-      if (sets.before.length) {
-        before(async () => {
-          this.context = await this.series(...sets.before)(this.context);
-        });
-      }
+    if (process.env.type === 'load') {
+      //recieving actions
+      //executing every action, each returns json(see Resource.js)
 
-      if (sets.beforeEach.length) {
-        /* @todo Implement launching of actions beforeEach test
-        beforeEach(async () => {
-          this.context = await this.series(...sets.beforeEach)(this.context);
-        });
-        */
-      }
+      return new artillery.HttpFlow(actions); //returns flow
+    } else {
+      describe(title, () => {
+        if (sets.before.length) {
+          before(async () => {
+            this.context = await this.series(...sets.before)(this.context);
+          });
+        }
 
-      sets.tests.forEach(test => test());
+        if (sets.beforeEach.length) {
+          /* @todo Implement launching of actions beforeEach test
+          beforeEach(async () => {
+            this.context = await this.series(...sets.beforeEach)(this.context);
+          });
+          */
+        }
 
-      if (sets.afterEach.length) {
-        /* @todo Implement launching of actions afterEach test
-        afterEach(async () => {
-          this.context = await this.series(...sets.afterEach)(this.context);
-        });
-        */
-      }
+        sets.tests.forEach(test => test());
 
-      if (sets.after.length) {
-        /* @todo Implement launching of actions after test
-        after(async () => {
-          this.context = await this.series(...sets.after)(this.context);
-        });
-        */
-      }
-    });
+        if (sets.afterEach.length) {
+          /* @todo Implement launching of actions afterEach test
+          afterEach(async () => {
+            this.context = await this.series(...sets.afterEach)(this.context);
+          });
+          */
+        }
+
+        if (sets.after.length) {
+          /* @todo Implement launching of actions after test
+          after(async () => {
+            this.context = await this.series(...sets.after)(this.context);
+          });
+          */
+        }
+      });
+    }
   };
 
   /**
@@ -116,7 +126,7 @@ class Tasty {
   suite(title, request, assertions) {
     const self = this;
 
-    return function test () {
+    return function test() {
       it(title, async () => {
         const resource = await request(self.context);
 
@@ -126,6 +136,20 @@ class Tasty {
       });
     };
   }
+
+  /**
+   * descripes think function to get special structure for waiting procedure
+   * @param secondsCount
+   */
+  /*think(secondsCount) {
+    const {HttpFlow} = artillery;
+    const think = (new HttpFlow()).addWaitSection(secondsCount).get().flow[0];
+    return think;
+  }
+
+  //@todo add logging functionality for artillery
+  log() {
+  }*/
 
   /**
    * Describe a suites of tests
@@ -139,7 +163,7 @@ class Tasty {
   suites(title, suites, request, assertions, isParallel) {
     const self = this;
 
-    return function tests () {
+    return function tests() {
       if (isParallel) {
         let responses = [];
 
@@ -185,7 +209,7 @@ class Tasty {
   }
 }
 
-module.exports = Tasty;
+module.exports = mixClasses(Tasty, artillery.TastyAdapter);
 
 /**
  * @function splitActions - Split action on three five groups
@@ -224,4 +248,26 @@ function splitActions(actions) {
     afterEach: [],
     tests: [],
   });
+}
+
+/**
+ * adds functionality of a Class2 to Class1, creates a class that extends 1st class, returns mixed
+ * @param class1
+ * @param class2
+ * @returns {*}
+ */
+function mixClasses(class1, class2) {
+  const propertyNamesOfClass2 = Object.getOwnPropertyNames(class2.prototype);
+  // get all props without a constructor:
+  const filteredPropsOfClass2 = propertyNamesOfClass2.filter(elt => (elt !== 'constructor'));
+  class newClass extends class1 {
+    constructor() {
+      super();
+    }
+  }
+  //iterate over obtained properties:
+  for (let key in filteredPropsOfClass2) {
+    newClass.prototype[filteredPropsOfClass2[key]] = class2.prototype[filteredPropsOfClass2[key]];
+  }
+  return newClass;
 }
