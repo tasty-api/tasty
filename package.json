@@ -19,7 +19,7 @@
   ],
   "author": "Yegor Litvyakov",
   "license": "ISC",
-  "bin": "./index.js",
+  "bin": "./cli.js",
   "dependencies": {
     "ajv": "^6.10.0",
     "async": "^2.6.2",

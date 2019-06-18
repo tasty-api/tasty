@@ -6,67 +6,52 @@ const artillery = require('./types/load/artillery');
 
 /** Class representing a Tasty library */
 class Tasty {
-  getRunner() {
-    /**
-     * @todo For programmatic usage, we need, Tasty object returns instance for multiple launching, and getting
-     *  statistics after all tests are finished.
-     *  Probably better to move it into another abstract entity, for example Runner class.
-     */
-  };
-
   /**
    * Describe a test case
    * @param {string} title - Test case title
    * @param {function[]} actions - Test actions
    */
   case(title, ...actions) {
-    //@todo case of load test!
-    //
     this.context = {};
 
     const sets = splitActions(actions);
 
-    if (process.env.type === 'load') {
-      //recieving actions
-      //executing every action, each returns json(see Resource.js)
+    if (process.env.type === 'load') return new artillery.HttpFlow(actions);
 
-      return new artillery.HttpFlow(actions); //returns flow
-    } else {
-      describe(title, () => {
-        if (sets.before.length) {
-          before(async () => {
-            this.context = await this.series(...sets.before)(this.context);
-          });
-        }
+    describe(title, () => {
+      if (sets.before.length) {
+        before(async () => {
+          this.context = await this.series(...sets.before)(this.context);
+        });
+      }
 
-        if (sets.beforeEach.length) {
-          /* @todo Implement launching of actions beforeEach test
-          beforeEach(async () => {
-            this.context = await this.series(...sets.beforeEach)(this.context);
-          });
-          */
-        }
+      if (sets.beforeEach.length) {
+        /* @todo Implement launching of actions beforeEach test
+        beforeEach(async () => {
+          this.context = await this.series(...sets.beforeEach)(this.context);
+        });
+        */
+      }
 
-        sets.tests.forEach(test => test());
+      sets.tests.forEach(test => test());
 
-        if (sets.afterEach.length) {
-          /* @todo Implement launching of actions afterEach test
-          afterEach(async () => {
-            this.context = await this.series(...sets.afterEach)(this.context);
-          });
-          */
-        }
+      if (sets.afterEach.length) {
+        /* @todo Implement launching of actions afterEach test
+        afterEach(async () => {
+          this.context = await this.series(...sets.afterEach)(this.context);
+        });
+        */
+      }
 
-        if (sets.after.length) {
-          /* @todo Implement launching of actions after test
-          after(async () => {
-            this.context = await this.series(...sets.after)(this.context);
-          });
-          */
-        }
-      });
-    }
-  };
+      if (sets.after.length) {
+        /* @todo Implement launching of actions after test
+        after(async () => {
+          this.context = await this.series(...sets.after)(this.context);
+        });
+        */
+      }
+    });
+  }
 
   /**
    * Describe a set of actions
@@ -209,7 +194,7 @@ class Tasty {
   }
 }
 
-module.exports = mixClasses(Tasty, artillery.TastyAdapter);
+module.exports = Tasty;
 
 /**
  * @function splitActions - Split action on three five groups
