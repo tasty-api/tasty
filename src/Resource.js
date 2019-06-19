@@ -1,9 +1,8 @@
 const axios = require('axios');
 const assert = require('chai').assert;
 const jsonpath = require('jsonpath');
-const Ajv = require('ajv');
-const log = require('../libs/log')(module);
 const { evalTpl } = require('../libs/utils');
+const Joi = require('@hapi/joi');
 
 /** Class representing a resource */
 class Resource {
@@ -64,10 +63,10 @@ class Resource {
    * Get full headers for request
    * @returns {object} A headers object
    */
-  getHeaders(headers) {
+  getHeaders(headers, runCache) {
     return {
       ...this.headers,
-      ...this.cache.headers,
+      ...runCache,
       ...headers,
     };
   }
@@ -81,7 +80,7 @@ class Resource {
     this.cache = {
       ...(this.cache || {}),
       params,
-    }
+    };
 
     return this;
   }
@@ -102,7 +101,7 @@ class Resource {
   setBody(body) {
     this.cache = {
       ...(this.cache || {}),
-      body,
+      ...body,
     };
 
     return this;
@@ -112,8 +111,12 @@ class Resource {
    * Get full body for request
    * @returns {object} A body object
    */
-  getBody() {
-    return this.cache.body || this.body;
+  getBody(body, runCache) {
+    return {
+      ...this.body,
+      ...runCache,
+      ...body,
+    };
   }
 
   /**
@@ -142,12 +145,11 @@ class Resource {
 
   /**
    * @todo JSDoc
-   * @param {string} method
-   * @param {number} responseCode
+   * @param {string} name
    */
-  getSchema(method, responseCode) {
+  getSchema(name) {
     // @todo add check
-    return this.schemas[method][responseCode];
+    return this.schemas[name];
   }
 
   /**
@@ -175,10 +177,9 @@ class Resource {
    */
   checkStructure(jsonSchema) {
     const { res } = this;
-    const ajv = new Ajv();
-    const validate = ajv.validate(jsonSchema, res.data);
+    const { error } = Joi.validate(res.data, jsonSchema);
 
-    assert.isTrue(validate, ajv.errorsText())
+    assert.isTrue(error === null, error && error.message);
   }
 
   /**
@@ -213,37 +214,57 @@ class Resource {
   /**
    * Create method for Resource
    * @param {string} method - Method name for registration in Resource
-   * @returns {function(*=): function(*=): module.Resource}
+   * @returns {function(*=): function(*=): Resource}
    * @private
    */
   _create(method) {
     return (opts = {}) => {
       const self = this;
-      const mediumPriorityMock = this.cache.mock;
+      const cache = JSON.parse(JSON.stringify(self.cache));
+      self.cache = {};
 
       return async function request(context = {}) {
-        const { capture, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
-        const pathParam = !!path && evalTpl(path, context);
+        const { capture, mock } = opts; // @todo Handle all options with evalTpl
 
-        self.res = self.getMock(method, mock)
-          ? {
-            headers: self.getHeaders(headers),
-            data: self.getMock(method, mock),
-            // @todo Provide status, statusText, message, body data from mock object
-          }
-          : await axios({
-            url: `${self.app.host.develop}/${self.url}${pathParam || ''}`,
-            method,
-            headers: self.getHeaders(headers),
-          });
-        self.cache = {};
+        self.res = self.getMock(method, mock, cache)
+          ? self._mockResponse(opts)
+          : await self._realResponse(method, opts, context, cache);
+
         self.snapshot = captureData(capture, self.res);
 
         return self;
-      }
+      };
     };
   }
-};
+
+  _mockResponse(opts) {
+    const { mock, headers } = opts;
+
+    return {
+      headers: this.getHeaders(headers),
+      data: this.getMock(method, mock),
+      // @todo Provide status, statusText, message, body data from mock object
+    };
+  }
+
+  async _realResponse(method, opts, context, cache) {
+    const { path, body, headers } = opts;
+    const pathParam = !!path && evalTpl(path, context);
+
+    let res;
+    try {
+      res = await axios({
+        url: `${this.app.host.develop}/${this.url}${pathParam || ''}`,
+        method,
+        headers: this.getHeaders(headers, cache),
+        data: this.getBody(body, cache),
+      });
+    } catch (err) {
+      res = err.response;
+    }
+    return res;
+  }
+}
 
 /**
  * @function captureData - Capture data from response to context
@@ -265,7 +286,7 @@ function captureData(capture, requestData) {
 
   return {
     [as]: getValue(json, requestData),
-  }
+  };
 }
 
 /**
