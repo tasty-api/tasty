@@ -1,5 +1,6 @@
 const path = require('path');
 const recursive = require('recursive-readdir');
+const merge = require('deepmerge');
 
 const FUNC = 'func';
 
@@ -11,7 +12,7 @@ class Runner {
    */
   constructor(dir = path.join(process.cwd(), 'test')) {
     this.func = {
-      dir
+      dir: path.join(dir, 'func')
     };
   }
 
@@ -29,6 +30,24 @@ class Runner {
     return run(tests, isParallel);
   }
 
+  // @todo implement filtration
+  update(options) {
+    this.config = merge(this.config, options, {
+      arrayMerge: (destArray, srcArray) => srcArray,
+    });
+  }
+
+  // @todo implement filtration
+  async getFilter(type) {
+    const files = await this._getTestsFiles(type) || [];
+
+    return files.reduce((filter, file) => {
+      filter[file] = true;
+
+      return filter;
+    }, {});
+  }
+
   /**
    * Get tests files
    * @param {string} type - Tests' type, func | load
@@ -41,6 +60,6 @@ class Runner {
     // @todo Make sorts
     // @todo Make filtration
   }
-};
+}
 
 module.exports = Runner;
