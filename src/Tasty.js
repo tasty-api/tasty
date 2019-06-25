@@ -108,7 +108,7 @@ class Tasty {
    * @param {object} assertions - Set of necessary assertions
    * @returns {function} - Function which start test
    */
-  suite(title, request, assertions) {
+  test(title, request, assertions) {
     const self = this;
 
     return function test() {

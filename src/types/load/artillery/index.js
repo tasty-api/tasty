@@ -282,7 +282,6 @@ class HttpFlow {
 }
 
 
-const avaliableTypes = new Set(['get', 'post', 'put', 'patch', 'delete', 'log', 'think']);
 const avaliableRequestTypes = new Set(['get', 'post', 'put', 'patch', 'delete']);
 
 /**
@@ -327,18 +326,6 @@ class SingleRequest { //flow action
         }
       }
     }
-
-    /*if (Object.keys(requestObject).length && SingleRequest._validateData()) {
-        // check if available types contents the structure we received
-        if (avaliableTypes.has(Object.keys(requestObject)[0])) {
-            this.name = Object.keys(requestObject)[0];
-            //key -value pairs: [{<oldKeyName>:<newKeyName>}]
-            this._keys = [{path: "url"}];//the input object may have the key "path" which is needed to be replaced by the key "url": {path:somepath} ---> {url:somepath}
-            this.request = requestObject;
-            //this.__cleanAndReplaceEverything();
-        }
-    }*/
-
   }
 
   /**
@@ -630,14 +617,10 @@ class SingleRequest { //flow action
    * @private
    */
   _checkAndDeleteHashtagElementsFromCaptureArray(request, requestName) {
-
     if (request.capture.length) {
       for (let i = 0; i < request.capture.length; i++) {
-
-        //check if the structure matches "#..." pattern
         if (this._checkForHashtagElement(request.capture[i].json)) {
           this.request[requestName].capture.splice(i, 1);
-          //this.request[requestName].capture[i];
         }
       }
     }
@@ -648,79 +631,12 @@ class SingleRequest { //flow action
  * simple adapter to be merged with tasty system
  */
 class TastyAdapter{
-  log(message){
-    return { log:SingleRequest._searchAndReplaceForArtillery(message) };
+  log(message) {
+    return { log: SingleRequest._searchAndReplaceForArtillery(message) };
   };
+
   think(seconds){return { think: Number(seconds) };};
 }
-
-
-/*const sR = new SingleRequest({
-    get: {
-        url: 'http://www.example.com',
-        capture: [{
-            json: '#["content-type"]',
-            as: 'ct',
-        }, {
-            json: '$.env',
-            as: 'env',
-        }
-        ]
-    }
-});*/
-
-
-//console.log(sR);
-//console.log(SingleRequest._searchAndReplaceForArtillery('/${env}/asdasdsad/${eee}'));
-/*const requestObject = {
-    get: {
-        method: 'get',
-        path: '/${env}',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        capture: [{
-            json: '$.env',
-            as: 'env',
-        }, {
-            json: '$.subEnv',
-            as: 'blabla',
-        },
-            {json: '#.header1', as: 'sdfdsafsdfdsa'}],
-        aaa: {
-            someMethod: "${ololo}",
-            anotherMethod: {e: 2, e4: {somevar: "${method}///sdfdsaf;oloaskjdf///sadfkplksjdfjlkwerwer/${some}"}}
-        }
-    }
-};*/
-/*const sR = (new SingleRequest(requestObject)).get();
-//sR._changeValuesForArtilleryConfig();
-console.log(JSON.stringify(sR));
-
-const httpFlow = new HttpFlow([sR]);
-httpFlow.addLogSection('some ${message}');
-httpFlow.addWaitSection(5);
-const scenariosInstance = Scenario.createFlow(httpFlow);
-
-const myScenarios = new Scenario(scenariosInstance);
-const newFlow = Scenario.createFlow({
-    flow: [
-        HttpFlow.createSingleRequest({log: 'some test ${message}'}).get(),
-        HttpFlow.createSingleRequest({
-            get: {
-                path: '/${somePath}/${somePath2}',
-                headers: {'Content-Type': 'application/json'}
-            }
-        }).get(),
-    ]
-});
-myScenarios.addFlowToScenarios(newFlow);
-
-const artConfig = new Artillery();
-artConfig.addPhase({duration:10,arrivalRate:1}).changeTarget('http://please.do/prepare/uranus').disableTLS().addScenarioSection(myScenarios);
-const resultArtilleryConfig = artConfig.get();
-fs.writeFileSync('./result1.json', JSON.stringify(resultArtilleryConfig, null, 2));*/
-
 
 module.exports = {
   HttpFlow,
@@ -729,36 +645,3 @@ module.exports = {
   Artillery: new Artillery(),
   TastyAdapter
 };
-/*const artilleryConfig = require('../../../../config/artillery');
-const artillery = new Artillery(artilleryConfig);
-console.log();*/
-//{method,url,body,headers,params,capture}
-/*const a = {
-  method: 'post',
-  url: '/aaa',
-  body: {
-    a: 4, b: 5
-  },
-  headers: {
-    'content-type': 'app/json'
-  },
-  params: {
-    asad: 'dsadsa',
-    l: 7
-  },
-  capture: {json: '$.result', as: 'myVariable'}
-}*/
-/*const b = new SingleRequest();
-console.log(b.get());*/
-
-/*const a = (new HttpFlow()).addWaitSection(10).get().flow[0];
-console.log(a);*/
-/*const myArtilleryConfig = new ArtilleryConfig();
-console.log(myArtilleryConfig.setPhases([{duration: 30, arrivalRate: 100}]).getPhases());
-myArtilleryConfig.saveToFile(//{
-    //encoding:'utf-8',
-    //mode:0o111,
-    //flag:'r'
-    /!*},*!/"./myFullPath_name.json").then(result => {
-    console.log('result:', result);
-});*/

@@ -1,13 +1,12 @@
 const path = require('path');
 const recursive = require('recursive-readdir');
-// const config = require('../config');
 const log = require('../libs/log')(module);
 const artillery = require('./types/load/artillery');
 const fs = require('fs');
 const { promisify } = require('util');
+const merge = require('deepmerge');
 
 const DEFAULT_TYPE = 'func';
-
 
 const required = (param = null, defaultValue = null) => {
   if (!defaultValue) {
@@ -22,8 +21,14 @@ class Runner {
    * Create a test runner
    * @param {string} [dir = '/test/[type]'] - Path to functional tests directory
    */
-  constructor(dir = required('dir in Runner()', path.join(process.cwd(), 'test'))) {
+  constructor(dir = path.join(process.cwd(), 'test')) {
     this.dir = dir;
+    this.func = {
+      dir: path.join(dir, 'func')
+    };
+    this.load = {
+      dir: path.join(dir, 'load')
+    };
   }
 
   /**
@@ -32,15 +37,9 @@ class Runner {
    * @param {string} config - Type of tests, could be func or load
    * @param {boolean} isParallel - Flag for running tests in parallel mode
    */
-  // @todo Implement support for load testing
-  async run(type = DEFAULT_TYPE, config = path.resolve(__dirname, '../config/artillery'), isParallel = false) {
-    // config.set('type',type);
+  async run(type = DEFAULT_TYPE, cwd = process.cwd(), config = path.resolve(__dirname, '../config/artillery'), isParallel = false) {
     this.type = type;
-    //@todo get and run functions should be different for load tests
-    //fint ushami
-    //@todo make appropriate getting type, not via process.env.type!
     process.env.type = type;
-    const _config = require(path.resolve(process.cwd(), config));
 
     const { get, run } = require(`./types/${type}`);
     const testsFiles = await this._getTestsFiles(type);
@@ -50,14 +49,15 @@ class Runner {
     let pathToSaveFile = null;//@todo this is for artillery configuration()! delete it further
     let pathToExecuteLoad = null;//@todo fix this!
     if (type === 'load') {
+      const _config = require(path.resolve(config));
       //add tests http flow to scenarios:
       const scenarios = (new artillery.Scenario(tests)).get();
       artillery.Artillery.setConfiguration(_config);
       //create artillery final configuration
-      artillery.Artillery.changeTarget('http://localhost:3000').addScenarioSection(scenarios);
+      artillery.Artillery.changeTarget('https://dev-api-internal-p2p.apigee.lmru.tech/magasin_api').addScenarioSection(scenarios);
       tests = artillery.Artillery.get();
-      pathToSaveFile = path.resolve(path.join(process.cwd(), 'artillery_report'));
-      pathToExecuteLoad = path.join(process.cwd(), './artilleryConfigFinal.json');
+      pathToSaveFile = path.resolve(path.join(cwd, 'artillery_report'));
+      pathToExecuteLoad = path.join(cwd, './artilleryConfigFinal.json');
 
       const writeFile = promisify(fs.writeFile);
       const readFile = promisify(fs.readFile);
@@ -66,12 +66,31 @@ class Runner {
         JSON.stringify(artillery.Artillery.get(), null, 2)
       );
     }
+    
     return run(pathToExecuteLoad || tests, pathToSaveFile || isParallel);
   }
 
 
   getCurrentType() {
     return this.type;
+  }
+
+  // @todo implement filtration
+  update(options) {
+    this.config = merge(this.config, options, {
+      arrayMerge: (destArray, srcArray) => srcArray,
+    });
+  }
+
+  // @todo implement filtration
+  async getFilter(type) {
+    const files = await this._getTestsFiles(type) || [];
+
+    return files.reduce((filter, file) => {
+      filter[file] = true;
+
+      return filter;
+    }, {});
   }
 
   /**
@@ -81,11 +100,11 @@ class Runner {
    * @private
    */
   async _getTestsFiles(type) {
-    return await recursive(path.join(this.dir, type));
+    return await recursive(path.join(this[type].dir));
 
     // @todo Make sorts
     // @todo Make filtration
   }
-};
+}
 
 module.exports = Runner;
