@@ -2,6 +2,7 @@ const path = require('path');
 const requireDir = require('require-dir');
 const log = require('../libs/log')(module);
 const Resource = require('./Resource');
+const config = require('../config');
 
 /** Class representing an application */
 class App {
@@ -18,6 +19,8 @@ class App {
     this.name = name;
 
     Object.keys(cfg).forEach(opt => this[opt] = cfg[opt]);
+    
+    config.set('hosts', cfg.host); // @todo arch: Think through this place
   }
 
   /**
@@ -25,11 +28,6 @@ class App {
    * @param {string} [srcDir = '/app'] - Path to application directory
    */
   init(srcDir = path.join(process.cwd(), 'app')) {
-    /**
-     * @todo Implement opportunity to initialize application from:
-     *  - postman config file
-     *  - definitions directory
-     */
     requireDir(srcDir, {
       recurse: true,
     });

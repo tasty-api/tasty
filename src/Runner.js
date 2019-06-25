@@ -1,75 +1,51 @@
+const fs = require('fs');
 const path = require('path');
 const recursive = require('recursive-readdir');
-const log = require('../libs/log')(module);
-const artillery = require('./types/load/artillery');
-const fs = require('fs');
-const { promisify } = require('util');
 const merge = require('deepmerge');
+const driverProvider = require('./DriverProvider');
+const config = require('../config');
 
 const DEFAULT_TYPE = 'func';
-
-const required = (param = null, defaultValue = null) => {
-  if (!defaultValue) {
-    throw new Error(param ? `missing parameter: ${param}` : 'missing parameter');
-  }
-  return defaultValue;
-};
 
 /** Class representing a test runner */
 class Runner {
   /**
    * Create a test runner
    * @param {string} [dir = '/test/[type]'] - Path to functional tests directory
+   * @param {string} funcCfg - Path to functional tests configuration file
+   * @param {string} loadCfg - Path to load tests configuration file
    */
-  constructor(dir = path.join(process.cwd(), 'test')) {
-    this.dir = dir;
+  constructor(dir = path.join(process.cwd(), 'test'), funcCfg = path.join(process.cwd(), '.mocharc.js'), loadCfg = path.join(process.cwd(), '.artilleryrc.js')) {
     this.func = {
-      dir: path.join(dir, 'func')
+      dir: path.join(dir, 'func'),
     };
     this.load = {
-      dir: path.join(dir, 'load')
+      dir: path.join(dir, 'load'),
     };
+
+    config.set('func_cfg', fs.existsSync(funcCfg) ? funcCfg : path.join(__dirname, '..', 'config', '.mocharc.js'));
+    config.set('load_cfg', fs.existsSync(loadCfg) ? loadCfg : path.join(__dirname, '..', 'config', '.artilleryrc.js'));
+
+    driverProvider.setDrivers({ func: 'mocha', load: 'artillery' });
   }
 
   /**
    * Run tests by type
    * @param {string} type - Type of tests, could be func or load
-   * @param {string} config - Type of tests, could be func or load
    * @param {boolean} isParallel - Flag for running tests in parallel mode
    */
-  async run(type = DEFAULT_TYPE, cwd = process.cwd(), config = path.resolve(__dirname, '../config/artillery'), isParallel = false) {
+  async run(type = DEFAULT_TYPE, isParallel = false) {
     this.type = type;
-    process.env.type = type;
+    driverProvider.setRunType(type);
 
-    const { get, run } = require(`./types/${type}`);
+    // this.console
+
+    const driver = driverProvider.resolve();
     const testsFiles = await this._getTestsFiles(type);
-    let tests = await get(testsFiles);
+    const tests = driver.get(testsFiles);
 
-
-    let pathToSaveFile = null;//@todo this is for artillery configuration()! delete it further
-    let pathToExecuteLoad = null;//@todo fix this!
-    if (type === 'load') {
-      const _config = require(path.resolve(config));
-      //add tests http flow to scenarios:
-      const scenarios = (new artillery.Scenario(tests)).get();
-      artillery.Artillery.setConfiguration(_config);
-      //create artillery final configuration
-      artillery.Artillery.changeTarget('https://dev-api-internal-p2p.apigee.lmru.tech/magasin_api').addScenarioSection(scenarios);
-      tests = artillery.Artillery.get();
-      pathToSaveFile = path.resolve(path.join(cwd, 'artillery_report'));
-      pathToExecuteLoad = path.join(cwd, './artilleryConfigFinal.json');
-
-      const writeFile = promisify(fs.writeFile);
-      const readFile = promisify(fs.readFile);
-      await writeFile(
-        pathToExecuteLoad,
-        JSON.stringify(artillery.Artillery.get(), null, 2)
-      );
-    }
-    
-    return run(pathToExecuteLoad || tests, pathToSaveFile || isParallel);
+    return driver.run(tests, isParallel, /*this.logStream*/);
   }
-
 
   getCurrentType() {
     return this.type;
