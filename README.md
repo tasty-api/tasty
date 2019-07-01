@@ -3,7 +3,7 @@
 </p>
 
 
-# TastyJS
+# TastyJS [![Build Status](https://travis-ci.org/JIoJIaJIu/tasty.svg?branch=master)](https://travis-ci.org/JIoJIaJIu/tasty)
 
 TastyJS is an API testing framework which will make your testing process tastier.
 
