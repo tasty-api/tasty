@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const recursive = require('recursive-readdir');
-const merge = require('deepmerge');
 const driverProvider = require('./DriverProvider');
 const config = require('../config');
 
@@ -52,11 +51,7 @@ class Runner {
   }
 
   // @todo implement filtration
-  update(options) {
-    this.config = merge(this.config, options, {
-      arrayMerge: (destArray, srcArray) => srcArray,
-    });
-  }
+  update(options) {}
 
   // @todo implement filtration
   async getFilter(type) {
