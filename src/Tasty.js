@@ -1,62 +1,26 @@
 const { promisify } = require('util');
 const waterfall = promisify(require('async/waterfall'));
 const parallel = promisify(require('async/parallel'));
-const { evalTpl } = require('../libs/utils');
+const DriverProvider = require('./DriverProvider');
 
 /** Class representing a Tasty library */
 class Tasty {
-  getRunner() {
-    /**
-     * @todo For programmatic usage, we need, Tasty object returns instance for multiple launching, and getting
-     *  statistics after all tests are finished.
-     *  Probably better to move it into another abstract entity, for example Runner class.
-     */
-  };
+  constructor() {
+    this.context = {};
+    this.case = Tasty.case;
+  }
 
   /**
    * Describe a test case
    * @param {string} title - Test case title
    * @param {function[]} actions - Test actions
    */
-  case(title, ...actions) {
-    this.context = {};
+  static case(title, ...actions) {
+    const tasty = new Tasty();
+    const driver = DriverProvider.resolve();
 
-    const sets = splitActions(actions);
-
-    describe(title, () => {
-      if (sets.before.length) {
-        before(async () => {
-          this.context = await this.series(...sets.before)(this.context);
-        });
-      }
-
-      if (sets.beforeEach.length) {
-        /* @todo Implement launching of actions beforeEach test
-        beforeEach(async () => {
-          this.context = await this.series(...sets.beforeEach)(this.context);
-        });
-        */
-      }
-
-      sets.tests.forEach(test => test());
-
-      if (sets.afterEach.length) {
-        /* @todo Implement launching of actions afterEach test
-        afterEach(async () => {
-          this.context = await this.series(...sets.afterEach)(this.context);
-        });
-        */
-      }
-
-      if (sets.after.length) {
-        /* @todo Implement launching of actions after test
-        after(async () => {
-          this.context = await this.series(...sets.after)(this.context);
-        });
-        */
-      }
-    });
-  };
+    return driver.case(title, actions, tasty);
+  }
 
   /**
    * Describe a set of actions
@@ -64,18 +28,30 @@ class Tasty {
    * @returns {function} Function which sent request in series
    */
   series(...actions) {
-    return async function requests(context) {
-      return {
-        ...context,
-        ...(await waterfall(actions.map(action => (
-          async (prevCtx = {}) => ({
-            ...prevCtx,
-            ...(action.name === 'request' ?
-              (await action(prevCtx)).snapshot :
-              await action(prevCtx)),
-          })
-        )))),
+    return async () => {
+      const resources = await waterfall(actions.map( action => (
+        async (resources = []) => {
+          resources.capturedData = resources.capturedData || {};
+
+          const resource = await action(resources.capturedData);
+
+          resources.push(resource);
+
+          resources.capturedData = {
+            ...resources.capturedData,
+            ...resource.capturedData,
+          };
+
+          return resources;
+        }
+      )));
+
+      this.context = {
+        ...this.context,
+        ...resources.capturedData,
       };
+
+      return resources;
     };
   }
 
@@ -85,24 +61,22 @@ class Tasty {
    * @returns {function} Function which sent request in parallel
    */
   parallel(...actions) {
-    return async function requests(context) {
-      const contexts = await parallel(actions.map(action => {
-        return async () => ({
-          ...(action.name === 'request' ?
-            (await action()).snapshot :
-            await action()),
-        });
-      }));
+    return async () => {
+      const resources = await parallel(actions.map( action => (
+        async () => (await action(this.context))
+      )));
 
-      return {
-        ...context,
-        ...(contexts.reduce((acc, ctx) => {
-          return {
-            ...acc,
-            ...ctx,
-          };
-        }, {})),
+      resources.capturedData = resources.reduce((acc, res) => ({
+        ...acc,
+        ...res.capturedData,
+      }), {});
+
+      this.context = {
+        ...this.context,
+        ...resources.capturedData,
       };
+
+      return resources;
     };
   }
 
@@ -113,17 +87,11 @@ class Tasty {
    * @param {object} assertions - Set of necessary assertions
    * @returns {function} - Function which start test
    */
-  suite(title, request, assertions) {
-    const self = this;
+  test(title, request, assertions) {
+    const driver = DriverProvider.resolve();
 
-    return function test () {
-      it(title, async () => {
-        const resource = await request(self.context);
-
-        Object.keys(assertions).forEach(assertion => {
-          resource[assertion](assertions[assertion], self.context);
-        });
-      });
+    return function test(tasty) {
+      driver.test(title, request, assertions, tasty);
     };
   }
 
@@ -136,92 +104,29 @@ class Tasty {
    * @param isParallel
    * @returns {tests}
    */
-  suites(title, suites, request, assertions, isParallel) {
-    const self = this;
+  tests(title, suites, request, assertions, isParallel) {
+    const driver = DriverProvider.resolve();
 
-    return function tests () {
-      if (isParallel) {
-        let responses = [];
-
-        before(async () => {
-          responses = await parallel(suites.map(suite => (
-            async () => request({
-              ...self.context,
-              suite,
-            })
-          )));
-        });
-
-        suites.forEach((suite, i) => {
-          it(evalTpl(title, { suite }), () => {
-            Object.keys(assertions).forEach(key => {
-              const assertion = typeof assertions[key] === 'string'
-                ? evalTpl(assertions[key], { suite })
-                : assertions[key];
-
-              responses[i][key](assertion, { suite });
-            });
-          });
-        });
-      } else {
-        suites.forEach((suite) => {
-          it(evalTpl(title, { suite }), async () => {
-            const resource = await request({
-              ...self.context,
-              suite,
-            });
-
-            Object.keys(assertions).forEach(key => {
-              const assertion = typeof assertions[key] === 'string'
-                ? evalTpl(assertions[key], { suite })
-                : assertions[key];
-
-              resource[assertion](key, { suite });
-            });
-          });
-        });
-      }
+    return function tests(tasty) {
+      driver.tests(title, suites, request, assertions, isParallel, tasty);
     };
+  }
+
+  /**
+   * Descripes think function to get special structure for waiting procedure
+   * @param {number} seconds - seconds to pause the virtual user
+   */
+  think(seconds) {
+    const driver = DriverProvider.resolve();
+
+    return driver.think(seconds);
+  }
+
+  log(message) {
+    const driver = DriverProvider.resolve();
+
+    return driver.log(message);
   }
 }
 
 module.exports = Tasty;
-
-/**
- * @function splitActions - Split action on three five groups
- * @param {function[]} actions - Tests actions
- * @returns {object} - Object with actions' groups
- */
-function splitActions(actions) {
-  return actions.reduce((sets, action) => {
-    if (typeof action === 'function' && (action.name === 'test' || action.name === 'tests')) {
-      sets.tests.push(action);
-
-      return sets;
-    }
-
-    if (sets.tests.length) {
-      if (Array.isArray(action)) {
-        sets.afterEach.push(action);
-      } else {
-        sets.after.push(action);
-      }
-
-      return sets;
-    }
-
-    if (Array.isArray(action)) {
-      sets.beforeEach.push(action);
-    } else {
-      sets.before.push(action);
-    }
-
-    return sets;
-  }, {
-    before: [],
-    beforeEach: [],
-    after: [],
-    afterEach: [],
-    tests: [],
-  });
-}

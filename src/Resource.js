@@ -1,8 +1,9 @@
-const axios = require('axios');
 const assert = require('chai').assert;
-const jsonpath = require('jsonpath');
-const { evalTpl } = require('../libs/utils');
+const utils = require('../libs/utils');
 const Joi = require('@hapi/joi');
+const _ = require('lodash');
+const config = require('../config');
+const driverProvider = require('./DriverProvider');
 
 /** Class representing a resource */
 class Resource {
@@ -38,6 +39,7 @@ class Resource {
     this.mock = mock;
     this.schemas = schemas;
     this.cache = {};
+    this.capturedData = {};
 
     methods.forEach(method => {
       this[method] = this._create(method);
@@ -60,18 +62,6 @@ class Resource {
   }
 
   /**
-   * Get full headers for request
-   * @returns {object} A headers object
-   */
-  getHeaders(headers, runCache) {
-    return {
-      ...this.headers,
-      ...runCache,
-      ...headers,
-    };
-  }
-
-  /**
    * Set temporary query parameters for request
    * @param {object} params - Query parameters for request
    * @returns {Resource} A Resource object
@@ -86,14 +76,6 @@ class Resource {
   }
 
   /**
-   * Get full query parameters for request
-   * @returns {object} A query parameters object
-   */
-  getParams() {
-    return this.cache.params || this.params;
-  }
-
-  /**
    * Set temporary body for request
    * @param {object} body - Body for request
    * @returns {Resource} A Resource object
@@ -101,22 +83,10 @@ class Resource {
   setBody(body) {
     this.cache = {
       ...(this.cache || {}),
-      ...body,
+      body,
     };
 
     return this;
-  }
-
-  /**
-   * Get full body for request
-   * @returns {object} A body object
-   */
-  getBody(body, runCache) {
-    return {
-      ...this.body,
-      ...runCache,
-      ...body,
-    };
   }
 
   /**
@@ -131,16 +101,6 @@ class Resource {
     };
 
     return this;
-  }
-
-  /**
-   * Get mock for response
-   * @param method
-   * @param mock
-   * @returns {object} A mock object
-   */
-  getMock(method, mock) {
-    return mock || this.cache.mock || this.mock[method];
   }
 
   /**
@@ -219,88 +179,20 @@ class Resource {
    */
   _create(method) {
     return (opts = {}) => {
-      const self = this;
-      const cache = JSON.parse(JSON.stringify(self.cache));
-      self.cache = {};
+      const cache = _.assign({}, this.cache);
+      const driver = driverProvider.resolve();
 
-      return async function request(context = {}) {
-        const { capture, mock } = opts; // @todo Handle all options with evalTpl
+      this.cache = {};
 
-        self.res = self.getMock(method, mock, cache)
-          ? self._mockResponse(opts)
-          : await self._realResponse(method, opts, context, cache);
-
-        self.snapshot = captureData(capture, self.res);
-
-        return self;
-      };
-    };
-  }
-
-  _mockResponse(opts) {
-    const { mock, headers } = opts;
-
-    return {
-      headers: this.getHeaders(headers),
-      data: this.getMock(method, mock),
-      // @todo Provide status, statusText, message, body data from mock object
-    };
-  }
-
-  async _realResponse(method, opts, context, cache) {
-    const { path, body, headers } = opts;
-    const pathParam = !!path && evalTpl(path, context);
-
-    let res;
-    try {
-      res = await axios({
-        url: `${this.app.host.develop}/${this.url}${pathParam || ''}`,
+      return driver.request(context => ({
         method,
-        headers: this.getHeaders(headers, cache),
-        data: this.getBody(body, cache),
-      });
-    } catch (err) {
-      res = err.response;
-    }
-    return res;
+        url: `${this.app.host[config.get('env')]}/${this.url}${utils.evalTpl(opts.path, context)}`,
+        headers: _.assign({}, this.headers, cache.headers, utils.evalObj(opts.headers, context)),
+        params: _.assign({}, this.params, cache.params, utils.evalObj(opts.params, context)),
+        body: _.assign({}, this.body, cache.body, utils.evalObj(opts.body, context)),
+      }), opts.mock || cache.mock || this.mock[method], opts.capture, this, { method, ...opts }, cache);
+    };
   }
-}
-
-/**
- * @function captureData - Capture data from response to context
- * @param capture
- * @param requestData
- * @returns {object|object[]} - Captured data from response
- */
-function captureData(capture, requestData) {
-  if (!capture) return {};
-
-  if (Array.isArray(capture)) {
-    return capture.reduce((accruedData, { json, as }) => ({
-      ...accruedData,
-      [as]: getValue(json, requestData),
-    }), {});
-  }
-
-  const { as, json } = capture;
-
-  return {
-    [as]: getValue(json, requestData),
-  };
-}
-
-/**
- * @function getValue - Get value from object by JsonPath
- * @param jsonPath
- * @param obj
- * @returns {*}
- */
-function getValue(jsonPath, obj) {
-  const rootObj = jsonPath.startsWith('#')
-    ? obj.headers
-    : obj.data;
-
-  return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
 
 module.exports = Resource;
