@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const recursive = require('recursive-readdir');
+const Readable = require('stream').Readable;
 const driverProvider = require('./DriverProvider');
 const config = require('../config');
 
@@ -21,6 +22,10 @@ class Runner {
     this.load = {
       dir: path.join(dir, 'load'),
     };
+
+    this.logStream = new Readable({
+      read: () => {},
+    });
 
     config.set('func_cfg', fs.existsSync(funcCfg) ? funcCfg : path.join(__dirname, '..', 'config', '.mocharc.js'));
     config.set('load_cfg', fs.existsSync(loadCfg) ? loadCfg : path.join(__dirname, '..', 'config', '.artilleryrc.js'));
@@ -43,7 +48,7 @@ class Runner {
     const testsFiles = await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);
 
-    return driver.run(tests, isParallel, /*this.logStream*/);
+    return driver.run(tests, isParallel, this.logStream);
   }
 
   getCurrentType() {

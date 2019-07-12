@@ -94,7 +94,7 @@ function mapValuesDeep(value, func) {
     func(value);
 }
 
-async function enhanceNativeLogger(logFile = 'log.html') {
+async function enhanceNativeLogger(logFile = 'log.html', logStream) {
   const logOutput = path.join(process.cwd(), 'logs', logFile);
 
   try {
@@ -125,6 +125,7 @@ async function enhanceNativeLogger(logFile = 'log.html') {
       if (html.indexOf('mochawesome') === -1) {
         fs.appendFileSync(logOutput, html);
         fs.appendFileSync(logOutput, '<br>');
+        logStream.push(html + '<br>');
       }
     }
 

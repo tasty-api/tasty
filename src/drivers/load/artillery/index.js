@@ -30,7 +30,7 @@ function get(files) {
   return files.map(file => require(file));
 }
 
-async function run(scenarios) {
+async function run(scenarios, isParallel, logStream) {
   const hosts = config.get('hosts');
   const env = config.get('env');
   const cfg = {
@@ -46,7 +46,7 @@ async function run(scenarios) {
 
   await writeFile(path.resolve(TEMP_LOAD_CONFIG), JSON.stringify(cfg, null, 2));
 
-  await utils.enhanceNativeLogger('load_log.html');
+  await utils.enhanceNativeLogger('load_log.html', logStream);
 
   await loadRun(TEMP_LOAD_CONFIG, {
     ...(logFile ? {

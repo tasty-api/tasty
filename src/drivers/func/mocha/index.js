@@ -27,8 +27,8 @@ function get(files) {
   return files.map(file => getMocha(file, reportDir));
 }
 
-async function run(tests, isParallel) {
-  await utils.enhanceNativeLogger('func_log.html');
+async function run(tests, isParallel, logStream) {
+  await utils.enhanceNativeLogger('func_log.html', logStream);
 
   const stats = isParallel
     ? await concat(tests, runTest)
