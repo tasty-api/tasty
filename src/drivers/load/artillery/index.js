@@ -56,7 +56,7 @@ async function run(scenarios, isParallel, logStream) {
   });
 
   utils.resetNativeLogger();
-
+  let stats;
   if (logFile) {
     const { dir } = path.parse(logFile);
 
@@ -70,12 +70,14 @@ async function run(scenarios, isParallel, logStream) {
       output: logFile,
     });
 
+    stats = fs.readFileSync(TEMP_LOAD_OUTPUT);
+
     await unlink(TEMP_LOAD_OUTPUT);
   }
 
   await unlink(TEMP_LOAD_CONFIG);
 
-  return cfg;
+  return JSON.parse(stats.toString());
 }
 
 function request(getParams, mock, capture, resource, opts, cache) {

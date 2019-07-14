@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const recursive = require('recursive-readdir');
 const Readable = require('stream').Readable;
+const _ = require('lodash');
 const driverProvider = require('./DriverProvider');
 const config = require('../config');
 
@@ -56,7 +57,9 @@ class Runner {
   }
 
   // @todo implement filtration
-  update(options) {}
+  setFilters(filters) {
+    this.filters = filters;
+  }
 
   // @todo implement filtration
   async getFilter(type) {
@@ -76,8 +79,12 @@ class Runner {
    * @private
    */
   async _getTestsFiles(type) {
-    return await recursive(path.join(this[type].dir));
+    const files = await recursive(path.join(this[type].dir));
+    const tests = _.get(this, 'filters.tests', files);
 
+    if (!tests.length) return files;
+
+    return _.filter(files, file => _.includes(tests, file));
     // @todo Make sorts
     // @todo Make filtration
   }
