@@ -1,5 +1,6 @@
 const path = require('path');
 const Mocha = require('mocha');
+const mLog = require('mocha-logger');
 const _ = require('lodash');
 const axios = require('axios');
 const { promisify } = require('util');
@@ -7,6 +8,7 @@ const parallel = promisify(require('async/parallel'));
 const concat = promisify(require('async/concat'));
 const concatSeries = promisify(require('async/concatSeries'));
 const config = require('../../../../config');
+const uuid = require('uuid/v4');
 
 const utils = require('../../../../libs/utils');
 
@@ -40,13 +42,13 @@ async function run(tests, isParallel, logStream) {
 }
 
 function request(getParams, mock, capture, resource) {
-  return async (context = {}) => {
+  return async (context = {}, uid) => {
     const params = getParams(context);
 
     // @todo implement Resource.setResponse
     resource.res = mock
       ? mockRequest(params, mock)
-      : await realRequest(params);
+      : await realRequest(params, uid);
 
     // @todo implement Resource.captureData
     resource.capturedData = utils.captureData(capture, resource.res);
@@ -80,8 +82,13 @@ function suite(title, actions, tasty) {
 }
 
 function test (title, request, assertions, tasty) {
+  const uid = uuid();
+
   Mocha.it(title, async () => {
-    const resource = await request(tasty.context);
+    const resource = await request(tasty.context, uid);
+    const traceLink = resource.getTraceLink(uid);
+
+    traceLink && mLog.log(traceLink);
 
     Object.keys(assertions).forEach(assertion => {
       resource[assertion](assertions[assertion], tasty.context);
@@ -94,32 +101,46 @@ function tests (title, suites, request, assertions, isParallel, tasty) {
     let responses = [];
 
     Mocha.before(async () => {
-      responses = await parallel(suites.map(suite => (
-        async () => request({
-          ...tasty.context,
-          suite,
-        })
-      )));
+      responses = await parallel(suites.map(suite => {
+        const uid = uuid();
+
+        return {
+          resource: async () => request({
+            ...tasty.context,
+            suite,
+          }, uid),
+          uid,
+        };
+      }));
     });
 
     suites.forEach((suite, i) => {
+      const traceLink = responses[i].resource.getTraceLink(responses[i].uid);
+
+      traceLink && mLog.log(traceLink);
+
       Mocha.it(utils.evalTpl(title, { suite }), () => {
         Object.keys(assertions).forEach(key => {
           const assertion = typeof assertions[key] === 'string'
             ? utils.evalTpl(assertions[key], { suite })
             : assertions[key];
 
-          responses[i][key](assertion, { suite });
+          responses.resource[i][key](assertion, { suite });
         });
       });
     });
   } else {
     suites.forEach((suite) => {
+      const uid = uuid();
+
       Mocha.it(utils.evalTpl(title, { suite }), async () => {
         const resource = await request({
           ...tasty.context,
           suite,
-        });
+        }, uid);
+        const traceLink = resource.getTraceLink(uid);
+
+        traceLink && mLog.log(traceLink);
 
         Object.keys(assertions).forEach(key => {
           const assertion = typeof assertions[key] === 'string'
@@ -200,12 +221,14 @@ function mockRequest(params, mock) {
   };
 }
 
-async function realRequest(params) {
+async function realRequest(params, uid) {
   try {
     return await axios({
       method: params.method,
       url: params.url,
-      headers: params.headers,
+      headers: {
+        ...(uid ? { ...params.headers, 'x-request-id': uid } : params.headers),
+      },
       params: params.params,
       data: params.body,
     });

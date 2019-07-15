@@ -112,6 +112,15 @@ class Resource {
     return this.schemas[name];
   }
 
+  getTraceLink(uid) {
+    const app = this.app;
+
+    if (app.trace)
+      return encodeURI(`${app.trace[config.get('env')]}/search?service=${app.name}&tags={"x-request-id":"${uid}"}`);
+
+    return null;
+  }
+
   /**
    * Check response status
    * @param {(number|string)} expected - Expected status value
