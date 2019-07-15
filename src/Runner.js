@@ -43,8 +43,6 @@ class Runner {
     this.type = type;
     driverProvider.setRunType(type);
 
-    // this.console
-
     const driver = driverProvider.resolve();
     const testsFiles = await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);

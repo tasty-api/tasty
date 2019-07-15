@@ -115,12 +115,8 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
     if (args.length) {
       const [tpl, ...tail] = args;
 
-      if (tail[1] && typeof tail[1] === 'string' && tail[1].startsWith('http')) {
-        tail[1] = `<a href="${tail[1]}">${decodeURI(tail[1])}</a>`;
-      }
-
       const string = util.format(tpl, ...tail) || '';
-      const html = convert.toHtml(string);
+      const html = convert.toHtml(string).replace(/>(http.*)</, (match, p1) => `><a target="_blank" href=${p1}>${decodeURI(p1)}</a><`); // @todo refactor
 
       if (html.indexOf('mochawesome') === -1) {
         fs.appendFileSync(logOutput, html);
