@@ -47,7 +47,13 @@ class Runner {
     const testsFiles = await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);
 
-    return driver.run(tests, isParallel, this.logStream);
+    this.status = 'inProcess';
+
+    const stats =  await driver.run(tests, isParallel, this.logStream);
+
+    this.status = 'inPending';
+
+    return stats;
   }
 
   getCurrentType() {
@@ -57,6 +63,10 @@ class Runner {
   // @todo implement filtration
   setFilters(filters) {
     this.filters = filters;
+  }
+
+  getStatus() {
+    return this.status;
   }
 
   // @todo implement filtration
