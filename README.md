@@ -3,7 +3,7 @@
 </p>
 
 
-# TastyJS
+# TastyJS [![CircleCI](https://circleci.com/gh/tasty-api/tasty/tree/master.svg?style=svg)](https://circleci.com/gh/tasty-api/tasty/tree/master)
 
 TastyJS is an API testing framework which will make your testing process tastier.
 
