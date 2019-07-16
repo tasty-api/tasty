@@ -1,8 +1,3 @@
 {
-  "env": "develop",
-  "runType": null,
-  "drivers": {
-    "func": "mocha",
-    "load": "artillery"
-  }
+  "env": "develop"
 }
