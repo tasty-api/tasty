@@ -164,7 +164,7 @@ function think(seconds) {
 
 function getMocha(file, reportDir) {
   resetCache(file);
-  const fileName = file.slice(_.lastIndexOf(file, '/') + 1, -3);
+  const fileName = path.basename(file, '.js');
   const _cfg = require(config.get('func_cfg'));
   const cfg = {
     reporterOptions: {
