@@ -11,7 +11,7 @@ const utils = require('../../../../libs/utils');
 const config = require('../../../../config');
 const mkdirp = require('mkdirp');
 const mkdir = promisify(mkdirp);
-
+const {resetCache} = require('../../../utils');
 const TEMP_LOAD_CONFIG = '.artillery.json.tmp';
 const TEMP_LOAD_OUTPUT = '.artillery.o.tmp';
 
@@ -39,8 +39,11 @@ async function run(scenarios, isParallel, logStream) {
     },
     scenarios,
   };
+  const cfgPath = config.get('load_cfg');
 
-  _.merge(cfg, require(config.get('load_cfg')));
+  resetCache(cfgPath);//reset the require cache to get the fresh version of config file if it has been rewritten
+
+  _.merge(cfg, require(cfgPath));
 
   const logFile = path.join(process.cwd(), 'reports', 'load', Date.now().toString(), 'index.html');
 

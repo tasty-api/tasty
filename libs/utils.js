@@ -23,6 +23,7 @@ module.exports = {
   mapMustacheTpl,
   enhanceNativeLogger,
   resetNativeLogger,
+  cloneInstance,
 };
 
 function evalTpl(tpl = '', context = {}) {
@@ -131,4 +132,8 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
 
 function resetNativeLogger() {
   console.log = NATIVE_LOGGER;
+}
+
+function cloneInstance(instance) {
+  return Object.assign(Object.create(instance), instance);
 }

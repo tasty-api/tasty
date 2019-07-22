@@ -5,8 +5,25 @@ const Readable = require('stream').Readable;
 const _ = require('lodash');
 const driverProvider = require('./DriverProvider');
 const config = require('../config');
+const mkdirp = require('mkdirp');
+const { promisify } = require('util');
+const { resetCache } = require('./utils');
+
+const writeFilePromisified = promisify(fs.writeFile);
+const mkdirpPromisified = promisify(mkdirp);
+const readdirPromisified = promisify(fs.readdir);
 
 const DEFAULT_TYPE = 'func';
+
+//require all the schemas and validation methods for all types of configs: func and load, etc...
+const configDriverFolders = fs.readdirSync(path.join(__dirname, '..', 'config', 'drivers'));
+const configDrivers = configDriverFolders.reduce((acc, item) => {
+  const pathOfTheItem = path.resolve(path.join(__dirname, '..', 'config', 'drivers', item));
+  if (fs.lstatSync(pathOfTheItem).isDirectory()) {
+    acc[item] = require(pathOfTheItem);
+  }
+  return acc;
+}, {});
 
 /** Class representing a test runner */
 class Runner {
@@ -16,7 +33,7 @@ class Runner {
    * @param {string} funcCfg - Path to functional tests configuration file
    * @param {string} loadCfg - Path to load tests configuration file
    */
-  constructor(dir = path.join(process.cwd(), 'test'), funcCfg = path.join(process.cwd(), '.mocharc.js'), loadCfg = path.join(process.cwd(), '.artilleryrc.js')) {
+  constructor(dir = path.join(process.cwd(), 'test'), funcCfg = path.join(process.cwd(), 'config', '.mocharc.js'), loadCfg = path.join(process.cwd(), 'config', '.artilleryrc.js')) {
     this.func = {
       dir: path.join(dir, 'func'),
     };
@@ -25,14 +42,34 @@ class Runner {
     };
 
     this.logStream = new Readable({
-      read: () => {},
+      read: () => {
+      },
     });
+    this.configDir = path.join(process.cwd(), 'config');
+    this.flagsChannelConfigs = {
+      func: false,
+      load: false
+    };//flags showing if the channel configs are set, not the core congigs from Tasty
+
+    this.flagsChannelConfigs['func'] = fs.existsSync(funcCfg);//config for functional tests - inside the channel or not
+    this.flagsChannelConfigs['load'] = fs.existsSync(funcCfg);//config for load tests - inside the channel or not
 
     config.set('func_cfg', fs.existsSync(funcCfg) ? funcCfg : path.join(__dirname, '..', 'config', '.mocharc.js'));
     config.set('load_cfg', fs.existsSync(loadCfg) ? loadCfg : path.join(__dirname, '..', 'config', '.artilleryrc.js'));
 
-    driverProvider.setDrivers({ func: 'mocha', load: 'artillery' });
-  }
+    driverProvider.setDrivers({func: 'mocha', load: 'artillery'});
+  };
+
+  getFileNameForType(type) {
+    switch (type) {
+      case 'func':
+        return '.mocharc.js';
+      case 'load':
+        return '.artilleryrc.js';
+      default:
+        break;
+    }
+  };
 
   /**
    * Run tests by type
@@ -49,7 +86,7 @@ class Runner {
 
     this.status = 'inProcess';
 
-    const stats =  await driver.run(tests, isParallel, this.logStream);
+    const stats = await driver.run(tests, isParallel, this.logStream);
 
     this.status = 'inPending';
 
@@ -57,8 +94,71 @@ class Runner {
   }
 
   getCurrentType() {
+
     return this.type;
   }
+
+  getCurrentConfig(type) {
+    const configFilePath = config.get(type + '_cfg');
+    try {
+      resetCache(configFilePath);
+      return require(configFilePath);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  validate(type, data) {
+    //get the appropriate validator for the data
+    const result = configDrivers[type].validate(data);
+    return result;
+  }
+
+  /**
+   * sets the current configuration and saves it to file
+   * @param type
+   * @param data
+   * @returns {Promise<never>}
+   */
+  async setCurrentConfig(type, data) {
+    // watch: if the config is from the channel(not to erase default config)
+    if (typeof data === "object") {
+      if (!this.flagsChannelConfigs[type]) {
+        //if no config in channel - create it
+
+        try {
+          //try to read configuration directory
+          await readdirPromisified(this.configDir);
+        } catch (err) {
+          if (err.code === 'ENOENT') {
+            //create directory
+            await mkdirpPromisified(this.configDir);
+          } else {
+            throw new Error('Error while searching the directory: ' + err);
+          }
+        }
+      }
+      // if we already have local configuration inside the channel application - just use it to save incoming data
+      const result = this.validate(type, data);
+      if (result.validationResult) {
+        const textToSave = 'module.exports = ' + JSON.stringify(data, null, 2);
+        try {
+          const filePathFinal = path.resolve(path.join(this.configDir, this.getFileNameForType(type)));
+          const writeResult = writeFilePromisified(filePathFinal, textToSave);
+          //set the config for current execution:
+          config.set(type+'_cfg',filePathFinal);
+        }
+        catch(error)
+        {
+          throw new Error('Error while writing the file of configuration: '+filePathFinal);
+        }
+      } else {
+        throw new Error(result.validationErrors);
+      }
+    } else {
+      throw new Error('The input object does not have valid JSON structure!');
+    }
+  };
 
   // @todo implement filtration
   setFilters(filters) {
@@ -67,6 +167,9 @@ class Runner {
 
   getStatus() {
     return this.status;
+  }
+  getSchema(type){
+    return configDrivers[type].getSchema();
   }
 
   // @todo implement filtration

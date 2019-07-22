@@ -1,6 +1,6 @@
 {
   "name": "tasty-api",
-  "version": "0.2.3",
+  "version": "0.3.1",
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^15.1.0",
+    "ajv": "^6.10.2",
     "ansi-to-html": "^0.6.11",
     "async": "^2.6.2",
     "axios": "^0.19.0",
