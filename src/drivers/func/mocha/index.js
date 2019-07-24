@@ -57,8 +57,10 @@ function request(getParams, mock, capture, resource) {
   };
 }
 
-function suite(title, actions, tasty) {
+async function suite(title, prepare, actions, tasty) {
   const sets = splitActions(actions);
+
+  if (prepare) await tasty.series(...prepare)();
 
   Mocha.describe(title, () => {
     if (sets.before.length) {
@@ -66,22 +68,24 @@ function suite(title, actions, tasty) {
     }
 
     if (sets.beforeEach.length) {
-      Mocha.beforeEach(() => this.series(...sets.beforeEach)()); // @todo need-tests
+      Mocha.beforeEach(() => tasty.series(...sets.beforeEach)()); // @todo need-tests
     }
 
     sets.tests.forEach(test => test(tasty)); // @todo question: Maybe call test in tasty context?
 
     if (sets.afterEach.length) {
-      Mocha.afterEach(() => this.series(...sets.afterEach)()); // @todo need-tests
+      Mocha.afterEach(() => tasty.series(...sets.afterEach)()); // @todo need-tests
     }
 
     if (sets.after.length) {
-      Mocha.after(() => this.series(...sets.after)()); // @todo need-tests
+      Mocha.after(() => tasty.series(...sets.after)()); // @todo need-tests
     }
   });
+
+  if (prepare) Mocha.run();
 }
 
-function test (title, request, assertions, tasty) {
+function test(title, request, assertions, tasty) {
   const uid = uuid();
 
   Mocha.it(title, async () => {
@@ -96,7 +100,9 @@ function test (title, request, assertions, tasty) {
   });
 }
 
-function tests (title, suites, request, assertions, isParallel, tasty) {
+function tests(title, suites, request, assertions, isParallel, tasty) {
+  suites = typeof suites === 'string' ? tasty.context[suites] : suites;
+
   if (isParallel) {
     let responses = [];
 
@@ -104,28 +110,28 @@ function tests (title, suites, request, assertions, isParallel, tasty) {
       responses = await parallel(suites.map(suite => {
         const uid = uuid();
 
-        return {
-          resource: async () => request({
+        return async () => ({
+          resource: utils.cloneInstance(await request({
             ...tasty.context,
             suite,
-          }, uid),
+          }, uid)),
           uid,
-        };
+        });
       }));
     });
 
     suites.forEach((suite, i) => {
-      const traceLink = responses[i].resource.getTraceLink(responses[i].uid);
-
-      traceLink && mLog.log(traceLink);
-
       Mocha.it(utils.evalTpl(title, { suite }), () => {
-        Object.keys(assertions).forEach(key => {
-          const assertion = typeof assertions[key] === 'string'
-            ? utils.evalTpl(assertions[key], { suite })
-            : assertions[key];
+        const traceLink = responses[i].resource.getTraceLink(responses[i].uid);
 
-          responses.resource[i][key](assertion, { suite });
+        traceLink && mLog.log(traceLink);
+
+        Object.keys(assertions).forEach(assertion => {
+          const value = typeof assertions[assertion] === 'string'
+            ? utils.evalTpl(assertions[assertion], { suite })
+            : assertions[assertion];
+
+          responses[i].resource[assertion](value, { suite });
         });
       });
     });
@@ -142,12 +148,12 @@ function tests (title, suites, request, assertions, isParallel, tasty) {
 
         traceLink && mLog.log(traceLink);
 
-        Object.keys(assertions).forEach(key => {
-          const assertion = typeof assertions[key] === 'string'
-            ? utils.evalTpl(assertions[key], { suite })
-            : assertions[key];
+        Object.keys(assertions).forEach(assertion => {
+          const value = typeof assertions[assertion] === 'string'
+            ? utils.evalTpl(assertions[assertion], { suite })
+            : assertions[assertion];
 
-          resource[assertion](key, { suite });
+          resource[assertion](value, { suite });
         });
       });
     });
@@ -171,6 +177,10 @@ function getMocha(file, reportDir) {
       reportDir: path.join(_.get(_cfg, 'reporterOptions.reportDir'), reportDir, fileName),
     }
   };
+
+  if (file.includes('prep')) {
+    cfg.delay = true;
+  }
 
   const mocha = new Mocha(_.merge({}, _cfg, cfg));
 

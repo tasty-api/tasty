@@ -3,6 +3,8 @@ const waterfall = promisify(require('async/waterfall'));
 const parallel = promisify(require('async/parallel'));
 const DriverProvider = require('./DriverProvider');
 
+const m = this;
+
 /** Class representing a Tasty library */
 class Tasty {
   constructor() {
@@ -13,13 +15,14 @@ class Tasty {
   /**
    * Describe a test case
    * @param {string} title - Test case title
+   * @param {function[]} prepare - actions before test case
    * @param {function[]} actions - Test actions
    */
-  static case(title, ...actions) {
+  static case(title, prepare, ...actions) {
     const tasty = new Tasty();
     const driver = DriverProvider.resolve();
 
-    return driver.case(title, actions, tasty);
+    return driver.case(title, prepare, actions, tasty);
   }
 
   /**
@@ -126,6 +129,10 @@ class Tasty {
     const driver = DriverProvider.resolve();
 
     return driver.log(message);
+  }
+
+  prepare(...actions) {
+    return actions;
   }
 }
 
