@@ -1,100 +1,100 @@
 const Ajv = require('ajv');
-const ajv = new Ajv({allErrors: true});
+const ajv = new Ajv({ allErrors: true });
 
 const getSchema = () => {
   const schema = {
-    type: "object",
+    type: 'object',
     properties: {
       reporter: {
-        type: "string",
+        type: 'string',
       },
       reporterOptions: {
-        type: "object",
+        type: 'object',
         properties: {
           reportDir: {
-            type: "string",
+            type: 'string',
           },
           reportFilename: {
-            type: "string",
+            type: 'string',
           }
         },
-        required: ["reportDir", "reportFilename"],
+        required: ['reportDir', 'reportFilename'],
         additionalProperties: true
       },
       color: {
-        type: "boolean"
+        type: 'boolean'
       },
       allowUncaught: {
-        type: "boolean"
+        type: 'boolean'
       },
       asyncOnly: {
-        type: "boolean"
+        type: 'boolean'
       },
       bail: {
-        type: "boolean"
+        type: 'boolean'
       },
       checkLeaks: {
-        type: "boolean"
+        type: 'boolean'
       },
       delay: {
-        type: "boolean"
+        type: 'boolean'
       },
       enableTimeouts: {
-        type: "boolean"
+        type: 'boolean'
       },
       fgrep: {
-        type: "boolean"
+        type: 'boolean'
       },
       forbidOnly: {
-        type: "boolean"
+        type: 'boolean'
       },
       forbidPending: {
-        type: "boolean"
+        type: 'boolean'
       },
       fullStackTrace: {
-        type: "boolean"
+        type: 'boolean'
       },
       global: {
-        type: "array",
+        type: 'array',
         items: [
-          {type: "string"}
+          { type: 'string' }
         ]
       },
       /*grep:{
         type:""
       },*/ //regexp - mark it as an additional property
       growl: {
-        type: "boolean"
+        type: 'boolean'
       },
       hideDiff: {
-        type: "boolean"
+        type: 'boolean'
       },
       ignoreLeaks: {
-        type: "boolean"
+        type: 'boolean'
       },
       invert: {
-        type: "boolean"
+        type: 'boolean'
       },
       noHighlighting: {
-        type: "boolean"
+        type: 'boolean'
       },
       retries: {
-        type: "number"
+        type: 'number'
       },
       slow: {
-        type: "number"
+        type: 'number'
       },
       timeout: {
-        type: ["number", "string"]
+        type: ['number', 'string']
       },
       ui: {
-        type: "string"
+        type: 'string'
       },
       useInlineDiffs: {
-        type: "boolean"
+        type: 'boolean'
       },
     },
-    required: ["reporter", "reporterOptions"],
+    required: ['reporter', 'reporterOptions'],
     additionalProperties: true
   };
   return schema;
@@ -104,7 +104,7 @@ const validate = (data, schema = getSchema()) => {
   return {
     validationResult: result,
     validationErrors: !result ? ajv.errorsText() : null
-  }
+  };
 };
 module.exports = {
   getSchema,

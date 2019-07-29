@@ -11,7 +11,7 @@ const utils = require('../../../../libs/utils');
 const config = require('../../../../config');
 const mkdirp = require('mkdirp');
 const mkdir = promisify(mkdirp);
-const {resetCache} = require('../../../utils');
+const { resetCache } = require('../../../utils');
 const TEMP_LOAD_CONFIG = '.artillery.json.tmp';
 const TEMP_LOAD_OUTPUT = '.artillery.o.tmp';
 
@@ -51,6 +51,7 @@ async function run(scenarios, isParallel, logStream) {
 
   await utils.enhanceNativeLogger('load_log.html', logStream);
 
+  debugger;
   await loadRun(TEMP_LOAD_CONFIG, {
     ...(logFile ? {
       output: TEMP_LOAD_OUTPUT,

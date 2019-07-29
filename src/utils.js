@@ -6,4 +6,4 @@ module.exports = {
       delete require.cache[path.resolve(module)];
     }
   }
-}
+};

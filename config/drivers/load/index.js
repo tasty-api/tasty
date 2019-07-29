@@ -1,49 +1,49 @@
 const Ajv = require('ajv');
-const ajv = new Ajv({allErrors: true});
+const ajv = new Ajv({ allErrors: true });
 
 const getSchema = () => {
   const schema = {
-    type: "object",
+    type: 'object',
     properties: {
       config: {
-        type: "object",
+        type: 'object',
         properties: {
           tls: {
-            type: "object",
+            type: 'object',
             properties: {
-              rejectUnauthorized: {type: "boolean"}
+              rejectUnauthorized: { type: 'boolean' }
             },
             additionalProperties: true,
-            required: ["rejectUnauthorized"]
+            required: ['rejectUnauthorized']
           },
           http: {
-            type: "object",
+            type: 'object',
             properties: {
-              timeout: {type: ["string", "integer"]}
+              timeout: { type: ['string', 'integer'] }
             },
             additionalProperties: true,
-            required: ["timeout"]
+            required: ['timeout']
           },
           phases: {
-            type: "array",
+            type: 'array',
             items: [
               {
-                type: "object",
+                type: 'object',
                 properties: {
                   duration: {
-                    type: "integer"
+                    type: 'integer'
                   },
                   arrivalRate: {
-                    type: "integer"
+                    type: 'integer'
                   }
                 },
                 additionalProperties: true,
-                required: ["duration", "arrivalRate"],
+                required: ['duration', 'arrivalRate'],
               }
             ]
           }
         },
-        required: ["tls", "http"],
+        required: ['tls', 'http'],
         additionalProperties: true,
       }
     },
@@ -56,7 +56,7 @@ const validate = (data, schema = getSchema()) => {
   return {
     validationResult: result,
     validationErrors: !result ? ajv.errorsText() : null
-  }
+  };
 };
 
 module.exports = {

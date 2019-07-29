@@ -57,17 +57,17 @@ class Runner {
     config.set('func_cfg', fs.existsSync(funcCfg) ? funcCfg : path.join(__dirname, '..', 'config', '.mocharc.js'));
     config.set('load_cfg', fs.existsSync(loadCfg) ? loadCfg : path.join(__dirname, '..', 'config', '.artilleryrc.js'));
 
-    driverProvider.setDrivers({func: 'mocha', load: 'artillery'});
+    driverProvider.setDrivers({ func: 'mocha', load: 'artillery' });
   };
 
   getFileNameForType(type) {
     switch (type) {
-      case 'func':
-        return '.mocharc.js';
-      case 'load':
-        return '.artilleryrc.js';
-      default:
-        break;
+    case 'func':
+      return '.mocharc.js';
+    case 'load':
+      return '.artilleryrc.js';
+    default:
+      break;
     }
   };
 
@@ -122,7 +122,7 @@ class Runner {
    */
   async setCurrentConfig(type, data) {
     // watch: if the config is from the channel(not to erase default config)
-    if (typeof data === "object") {
+    if (typeof data === 'object') {
       if (!this.flagsChannelConfigs[type]) {
         //if no config in channel - create it
 
@@ -146,7 +146,7 @@ class Runner {
           const filePathFinal = path.resolve(path.join(this.configDir, this.getFileNameForType(type)));
           const writeResult = writeFilePromisified(filePathFinal, textToSave);
           //set the config for current execution:
-          config.set(type+'_cfg',filePathFinal);
+          config.set(type+'_cfg', filePathFinal);
         }
         catch(error)
         {
