@@ -47,12 +47,9 @@ class Runner {
     });
     this.configDir = path.join(process.cwd(), 'config');
     this.flagsChannelConfigs = {
-      func: false,
-      load: false
+      func: fs.existsSync(funcCfg),
+      load: fs.existsSync(loadCfg)
     };//flags showing if the channel configs are set, not the core congigs from Tasty
-
-    this.flagsChannelConfigs['func'] = fs.existsSync(funcCfg);//config for functional tests - inside the channel or not
-    this.flagsChannelConfigs['load'] = fs.existsSync(funcCfg);//config for load tests - inside the channel or not
 
     config.set('func_cfg', fs.existsSync(funcCfg) ? funcCfg : path.join(__dirname, '..', 'config', '.mocharc.js'));
     config.set('load_cfg', fs.existsSync(loadCfg) ? loadCfg : path.join(__dirname, '..', 'config', '.artilleryrc.js'));
@@ -60,16 +57,14 @@ class Runner {
     driverProvider.setDrivers({ func: 'mocha', load: 'artillery' });
   };
 
-  getFileNameForType(type) {
-    switch (type) {
-    case 'func':
-      return '.mocharc.js';
-    case 'load':
-      return '.artilleryrc.js';
-    default:
-      break;
-    }
+  getFileNameForType(type){
+    return {
+      func: '.mocharc.js',
+      load: '.artilleryrc.js'
+    }[type];
   };
+  //const somefunc = () =>({a:1,b:2});
+
 
   /**
    * Run tests by type
@@ -110,8 +105,7 @@ class Runner {
 
   validate(type, data) {
     //get the appropriate validator for the data
-    const result = configDrivers[type].validate(data);
-    return result;
+    return configDrivers[type].validate(data);
   }
 
   /**
@@ -140,20 +134,18 @@ class Runner {
       }
       // if we already have local configuration inside the channel application - just use it to save incoming data
       const result = this.validate(type, data);
-      if (result.validationResult) {
+      if (result.result) {
         const textToSave = 'module.exports = ' + JSON.stringify(data, null, 2);
         try {
           const filePathFinal = path.resolve(path.join(this.configDir, this.getFileNameForType(type)));
           const writeResult = writeFilePromisified(filePathFinal, textToSave);
           //set the config for current execution:
-          config.set(type+'_cfg', filePathFinal);
-        }
-        catch(error)
-        {
-          throw new Error('Error while writing the file of configuration: '+filePathFinal);
+          config.set(type + '_cfg', filePathFinal);
+        } catch (error) {
+          throw new Error('Error while writing the file of configuration: ' + filePathFinal);
         }
       } else {
-        throw new Error(result.validationErrors);
+        throw new Error(result.errors);
       }
     } else {
       throw new Error('The input object does not have valid JSON structure!');
@@ -168,7 +160,8 @@ class Runner {
   getStatus() {
     return this.status;
   }
-  getSchema(type){
+
+  getSchema(type) {
     return configDrivers[type].getSchema();
   }
 
@@ -200,5 +193,4 @@ class Runner {
     // @todo Make filtration
   }
 }
-
 module.exports = Runner;
