@@ -3,8 +3,6 @@ const waterfall = promisify(require('async/waterfall'));
 const parallel = promisify(require('async/parallel'));
 const DriverProvider = require('./DriverProvider');
 
-const m = this;
-
 /** Class representing a Tasty library */
 class Tasty {
   constructor() {
@@ -31,30 +29,32 @@ class Tasty {
    * @returns {function} Function which sent request in series
    */
   series(...actions) {
-    return async () => {
-      const resources = await waterfall(actions.map( action => (
-        async (resources = []) => {
-          resources.capturedData = resources.capturedData || {};
+    return {
+      send: async () => {
+        const resources = await waterfall(actions.map(action => (
+          async (resources = []) => {
+            resources.capturedData = resources.capturedData || {};
 
-          const resource = await action(resources.capturedData);
+            const resource = await action.send(resources.capturedData);
 
-          resources.push(resource);
+            resources.push(resource);
 
-          resources.capturedData = {
-            ...resources.capturedData,
-            ...resource.capturedData,
-          };
+            resources.capturedData = {
+              ...resources.capturedData,
+              ...resource.capturedData,
+            };
 
-          return resources;
-        }
-      )));
+            return resources;
+          }
+        )));
 
-      this.context = {
-        ...this.context,
-        ...resources.capturedData,
-      };
+        this.context = {
+          ...this.context,
+          ...resources.capturedData,
+        };
 
-      return resources;
+        return resources;
+      },
     };
   }
 
@@ -64,22 +64,24 @@ class Tasty {
    * @returns {function} Function which sent request in parallel
    */
   parallel(...actions) {
-    return async () => {
-      const resources = await parallel(actions.map( action => (
-        async () => (await action(this.context))
-      )));
+    return {
+      send: async () => {
+        const resources = await parallel(actions.map( action => (
+          async () => (await action.send(this.context))
+        )));
 
-      resources.capturedData = resources.reduce((acc, res) => ({
-        ...acc,
-        ...res.capturedData,
-      }), {});
+        resources.capturedData = resources.reduce((acc, res) => ({
+          ...acc,
+          ...res.capturedData,
+        }), {});
 
-      this.context = {
-        ...this.context,
-        ...resources.capturedData,
-      };
+        this.context = {
+          ...this.context,
+          ...resources.capturedData,
+        };
 
-      return resources;
+        return resources;
+      },
     };
   }
 

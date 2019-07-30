@@ -1,6 +1,5 @@
 const path = require('path');
 const Mocha = require('mocha');
-const mLog = require('mocha-logger');
 const _ = require('lodash');
 const axios = require('axios');
 const { promisify } = require('util');
@@ -42,18 +41,21 @@ async function run(tests, isParallel, logStream) {
 }
 
 function request(getParams, mock, capture, resource) {
-  return async (context = {}, uid) => {
-    const params = getParams(context);
+  return {
+    getTraceLink: uid => resource.getTraceLink(uid),
+    send: async (context = {}, uid) => {
+      const params = getParams(context);
 
-    // @todo implement Resource.setResponse
-    resource.res = mock
-      ? mockRequest(params, mock)
-      : await realRequest(params, uid);
+      // @todo implement Resource.setResponse
+      resource.res = mock
+        ? mockRequest(params, mock)
+        : await realRequest(params, uid);
 
-    // @todo implement Resource.captureData
-    resource.capturedData = utils.captureData(capture, resource.res);
+      // @todo implement Resource.captureData
+      resource.capturedData = utils.captureData(capture, resource.res);
 
-    return resource;
+      return resource;
+    },
   };
 }
 
@@ -88,72 +90,74 @@ async function suite(title, prepare, actions, tasty) {
 function test(title, request, assertions, tasty) {
   const uid = uuid();
 
-  Mocha.it(title, async () => {
-    const resource = await request(tasty.context, uid);
-    const traceLink = resource.getTraceLink(uid);
+  Mocha.describe(request.getTraceLink(uid), () => {
+    Mocha.it(title, async () => {
+      const resource = await request.send(tasty.context, uid);
 
-    traceLink && mLog.log(traceLink);
-
-    Object.keys(assertions).forEach(assertion => {
-      resource[assertion](assertions[assertion], tasty.context);
+      Object.keys(assertions).forEach(assertion => {
+        resource[assertion](assertions[assertion], tasty.context);
+      });
     });
   });
 }
 
-function tests(title, suites, request, assertions, isParallel, tasty) {
-  suites = typeof suites === 'string' ? tasty.context[suites] : suites;
+function tests(title, tests, request, assertions, isParallel, tasty) {
+  tests = typeof tests === 'string' ? tasty.context[tests] : tests;
 
   if (isParallel) {
-    let responses = [];
+    let resources = [];
 
-    Mocha.before(async () => {
-      responses = await parallel(suites.map(suite => {
-        const uid = uuid();
+    tests.forEach(test => {
+      const uid = uuid();
 
-        return async () => ({
-          resource: utils.cloneInstance(await request({
-            ...tasty.context,
-            suite,
-          }, uid)),
-          uid,
-        });
-      }));
+      test.trace = {
+        id: uid,
+        link: request.getTraceLink(uid),
+      };
     });
 
-    suites.forEach((suite, i) => {
-      Mocha.it(utils.evalTpl(title, { suite }), () => {
-        const traceLink = responses[i].resource.getTraceLink(responses[i].uid);
+    Mocha.before(async () => {
+      resources = await parallel(tests.map(({ trace, ...test }) => (
+        async () => utils.cloneInstance(
+          await request.send({
+            ...tasty.context,
+            test,
+          }, trace.id)
+        )
+      )));
+    });
 
-        traceLink && mLog.log(traceLink);
+    tests.forEach(({ trace, ...test }, i) => {
+      Mocha.describe(trace.link, () => {
+        Mocha.it(utils.evalTpl(title, { test }), () => {
+          Object.keys(assertions).forEach(assertion => {
+            const value = typeof assertions[assertion] === 'string'
+              ? utils.evalTpl(assertions[assertion], { test })
+              : assertions[assertion];
 
-        Object.keys(assertions).forEach(assertion => {
-          const value = typeof assertions[assertion] === 'string'
-            ? utils.evalTpl(assertions[assertion], { suite })
-            : assertions[assertion];
-
-          responses[i].resource[assertion](value, { suite });
+            resources[i][assertion](value, { test });
+          });
         });
       });
     });
   } else {
-    suites.forEach((suite) => {
+    tests.forEach((test) => {
       const uid = uuid();
 
-      Mocha.it(utils.evalTpl(title, { suite }), async () => {
-        const resource = await request({
-          ...tasty.context,
-          suite,
-        }, uid);
-        const traceLink = resource.getTraceLink(uid);
+      Mocha.describe(request.getTraceLink(uid), () => {
+        Mocha.it(utils.evalTpl(title, { test }), async () => {
+          const resource = await request.send({
+            ...tasty.context,
+            test,
+          }, uid);
 
-        traceLink && mLog.log(traceLink);
+          Object.keys(assertions).forEach(assertion => {
+            const value = typeof assertions[assertion] === 'string'
+              ? utils.evalTpl(assertions[assertion], { test })
+              : assertions[assertion];
 
-        Object.keys(assertions).forEach(assertion => {
-          const value = typeof assertions[assertion] === 'string'
-            ? utils.evalTpl(assertions[assertion], { suite })
-            : assertions[assertion];
-
-          resource[assertion](value, { suite });
+            resource[assertion](value, { test });
+          });
         });
       });
     });
