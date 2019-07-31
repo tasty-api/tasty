@@ -59,28 +59,28 @@ function request(getParams, mock, capture, resource) {
   };
 }
 
-async function suite(title, prepare, actions, tasty) {
+async function suite(title, actions, tasty, prepare) {
   const sets = splitActions(actions);
 
-  if (prepare) await tasty.series(...prepare)();
+  if (prepare) await tasty.series(...prepare).send();
 
   Mocha.describe(title, () => {
     if (sets.before.length) {
-      Mocha.before(() => tasty.series(...sets.before)());
+      Mocha.before(() => tasty.series(...sets.before).send());
     }
 
     if (sets.beforeEach.length) {
-      Mocha.beforeEach(() => tasty.series(...sets.beforeEach)()); // @todo need-tests
+      Mocha.beforeEach(() => tasty.series(...sets.beforeEach).send()); // @todo need-tests
     }
 
     sets.tests.forEach(test => test(tasty)); // @todo question: Maybe call test in tasty context?
 
     if (sets.afterEach.length) {
-      Mocha.afterEach(() => tasty.series(...sets.afterEach)()); // @todo need-tests
+      Mocha.afterEach(() => tasty.series(...sets.afterEach).send()); // @todo need-tests
     }
 
     if (sets.after.length) {
-      Mocha.after(() => tasty.series(...sets.after)()); // @todo need-tests
+      Mocha.after(() => tasty.series(...sets.after).send()); // @todo need-tests
     }
   });
 

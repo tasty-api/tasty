@@ -20,7 +20,7 @@ class Tasty {
     const tasty = new Tasty();
     const driver = DriverProvider.resolve();
 
-    return driver.case(title, prepare, actions, tasty);
+    return driver.case(title, actions, tasty, prepare);
   }
 
   /**
