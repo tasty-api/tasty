@@ -90,7 +90,17 @@ async function suite(title, actions, tasty, prepare) {
 function test(title, request, assertions, tasty) {
   const uid = uuid();
 
-  Mocha.describe(request.getTraceLink(uid), () => {
+  if (request.getTraceLink(uid)) {
+    Mocha.describe(request.getTraceLink(uid), () => {
+      Mocha.it(title, async () => {
+        const resource = await request.send(tasty.context, uid);
+
+        Object.keys(assertions).forEach(assertion => {
+          resource[assertion](assertions[assertion], tasty.context);
+        });
+      });
+    });
+  } else {
     Mocha.it(title, async () => {
       const resource = await request.send(tasty.context, uid);
 
@@ -98,7 +108,7 @@ function test(title, request, assertions, tasty) {
         resource[assertion](assertions[assertion], tasty.context);
       });
     });
-  });
+  }
 }
 
 function tests(title, tests, request, assertions, isParallel, tasty) {
