@@ -38,13 +38,14 @@ class Runner {
    * Run tests by type
    * @param {string} type - Type of tests, could be func or load
    * @param {boolean} isParallel - Flag for running tests in parallel mode
+   * @param {string[]} [files] - Files for testing
    */
-  async run(type = DEFAULT_TYPE, isParallel = false) {
+  async run(type = DEFAULT_TYPE, isParallel = false, files) {
     this.type = type;
     driverProvider.setRunType(type);
 
     const driver = driverProvider.resolve();
-    const testsFiles = await this._getTestsFiles(type);
+    const testsFiles = files || await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);
 
     this.status = 'inProcess';

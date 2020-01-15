@@ -8,6 +8,13 @@ const log = require('./libs/log')(module);
 const Runner = require('./src/Runner');
 
 const { TYPES, DEFAULT_TYPE } = require('./src/consts');
+let files = [];
+
+program.command('test <file> [files...]')
+  .description('Test specified files')
+  .action((file, filesList) => {
+    files = filesList ? filesList.concat(file) : [file];
+  });
 
 program
   .version(`${name} ${major}.${minor}.${patch} - ${codename}`, '-v, --version')
@@ -27,7 +34,7 @@ if (!TYPES.has(type)) {
 
 let runner = new Runner(dir, func_config, load_config);
 
-runner.run(type, parallel)
+runner.run(type, parallel, files)
   .then(stats => {
     console.log(stats);
   })
