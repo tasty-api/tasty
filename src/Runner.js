@@ -45,7 +45,7 @@ class Runner {
     driverProvider.setRunType(type);
 
     const driver = driverProvider.resolve();
-    const testsFiles = files || await this._getTestsFiles(type);
+    const testsFiles = files.length ? files : await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);
 
     this.status = 'inProcess';
