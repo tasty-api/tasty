@@ -43,6 +43,7 @@ async function run(tests, isParallel, logStream) {
 function request(getParams, mock, capture, resource) {
   return {
     getTraceLink: uid => resource.getTraceLink(uid),
+    url: `${getParams({}).url}`,
     send: async (context = {}, uid) => {
       const params = getParams(context);
 
@@ -90,9 +91,9 @@ async function suite(title, actions, tasty, prepare) {
 function test(title, request, assertions, tasty) {
   const uid = uuid();
 
-  if (request.getTraceLink(uid)) {
+  if (request.getTraceLink && request.getTraceLink(uid)) {
     Mocha.describe(request.getTraceLink(uid), () => {
-      Mocha.it(title, async () => {
+      Mocha.it(`${title} - ${request.url}`, async () => {
         const resource = await request.send(tasty.context, uid);
 
         Object.keys(assertions).forEach(assertion => {
@@ -101,7 +102,7 @@ function test(title, request, assertions, tasty) {
       });
     });
   } else {
-    Mocha.it(title, async () => {
+    Mocha.it(`${title} - ${request.url}`, async () => {
       const resource = await request.send(tasty.context, uid);
 
       Object.keys(assertions).forEach(assertion => {

@@ -40,7 +40,7 @@ class Runner {
    * @param {boolean} isParallel - Flag for running tests in parallel mode
    * @param {string[]} [files] - Files for testing
    */
-  async run(type = DEFAULT_TYPE, isParallel = false, files) {
+  async run(type = DEFAULT_TYPE, isParallel = false, files = []) {
     this.type = type;
     driverProvider.setRunType(type);
 

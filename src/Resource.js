@@ -115,7 +115,7 @@ class Resource {
   getTraceLink(uid) {
     const app = this.app;
 
-    if (app.trace)
+    if (app.trace && app.trace[config.get('env')])
       return encodeURI(`${app.trace[config.get('env')]}/search?service=${app.name}&tags={"x-request-id":"${uid}"}`);
 
     return null;
