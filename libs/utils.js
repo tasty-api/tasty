@@ -33,13 +33,9 @@ function evalTpl(tpl = '', context = {}) {
 }
 
 function evalObj(obj = {}, context) {
-  const res = {};
-
-  Object.keys(obj).forEach(key => {
-    res[key] = evalTpl(obj[key], context);
+  return mapValuesDeep(obj, item => {
+    return typeof item === 'string' ? evalTpl(item, context) : item;
   });
-
-  return res;
 }
 
 /**
