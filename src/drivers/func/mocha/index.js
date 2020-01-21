@@ -8,6 +8,7 @@ const concat = promisify(require('async/concat'));
 const concatSeries = promisify(require('async/concatSeries'));
 const config = require('../../../../config');
 const uuid = require('uuid/v4');
+const FormData = require('form-data');
 
 const utils = require('../../../../libs/utils');
 
@@ -247,15 +248,25 @@ function mockRequest(params, mock) {
 }
 
 async function realRequest(params, uid) {
+  let data = params.body;
+  if (params.formData) {
+    data = new FormData();
+
+    Object.keys(params.formData).forEach((key) => {
+      data.append(key, params.formData[key]);
+    });
+  }
+
   try {
     return await axios({
       method: params.method,
       url: params.url,
       headers: {
         ...(uid ? { ...params.headers, 'x-request-id': uid } : params.headers),
+        ...(params.formData ? data.getHeaders() : {}),
       },
       params: params.params,
-      data: params.body,
+      data,
     });
   } catch (err) {
     return err.response;

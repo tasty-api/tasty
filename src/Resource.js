@@ -174,7 +174,7 @@ class Resource {
    */
   check(fn, ctx) {
     return assert.equal(
-      fn(this.res.data, ctx),
+      fn(_.get(this, 'res.data'), ctx),
       true,
       `${fn.toString()} returns false, expected to be true`
     );
@@ -199,6 +199,7 @@ class Resource {
         headers: _.assign({}, this.headers, cache.headers, utils.evalObj(opts.headers, context)),
         params: _.assign({}, this.params, cache.params, utils.evalObj(opts.params, context)),
         body: _.assign({}, this.body, cache.body, utils.evalObj(opts.body, context)),
+        formData: opts.formData,
       }), opts.mock || cache.mock || this.mock[method], opts.capture, this, { method, ...opts }, cache);
     };
   }
