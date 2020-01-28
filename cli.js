@@ -8,6 +8,8 @@ const log = require('./libs/log')(module);
 const Runner = require('./src/Runner');
 
 const { TYPES, DEFAULT_TYPE } = require('./src/consts');
+const config = require('./config');
+
 let files = [];
 
 program.command('test <file> [files...]')
@@ -15,6 +17,21 @@ program.command('test <file> [files...]')
   .action((file, filesList) => {
     files = filesList ? filesList.concat(file) : [file];
   });
+
+program.command('from <mode>')
+  .option('-c, --config [path to postman collection]', 'specify path to Postman collection json file')
+  .description('Specify how would you like to initialize Tasty App: manually, from Postman collection or from Platformeco collection')
+  .action((mode, options) => {
+    config.set('mode', mode);
+    config.set('postman_options:config', options.config);
+  });
+
+program.on('--help', function(){
+  console.log('');
+  console.log('Examples:');
+  console.log('  $ tasty from postman --config path/to/postman/collection.json');
+  console.log('  $ tasty from platformeco --dir path/to/folder/with/platformeco/definitions');
+});
 
 program
   .version(`${name} ${major}.${minor}.${patch} - ${codename}`, '-v, --version')
