@@ -16,13 +16,23 @@ class Runner {
    * @param {string} funcCfg - Path to functional tests configuration file
    * @param {string} loadCfg - Path to load tests configuration file
    */
-  constructor(dir = path.join(process.cwd(), 'test'), funcCfg = path.join(process.cwd(), '.mocharc.js'), loadCfg = path.join(process.cwd(), '.artilleryrc.js')) {
+  constructor({
+    testsDir= path.join(process.cwd(), 'test'),
+    postmanCollection = null,
+    funcCfg = path.join(process.cwd(), '.mocharc.js'),
+    loadCfg = path.join(process.cwd(), '.artilleryrc.js')
+  }) {
     this.func = {
-      dir: path.join(dir, 'func'),
+      dir: path.join(testsDir, 'func'),
     };
     this.load = {
-      dir: path.join(dir, 'load'),
+      dir: path.join(testsDir, 'load'),
     };
+
+    if (postmanCollection) {
+      config.set('mode', 'postman');
+      config.set('postman_options:config', postmanCollection);
+    }
 
     this.logStream = new Readable({
       read: () => {},
