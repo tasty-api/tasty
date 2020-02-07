@@ -23,15 +23,14 @@ class Runner {
     loadCfg = path.join(process.cwd(), '.artilleryrc.js')
   }) {
     this.func = {
-      dir: path.join(testsDir, 'func'),
+      dir: fs.existsSync(path.join(testsDir, 'func')) ? path.join(testsDir, 'func') : testsDir,
     };
     this.load = {
       dir: path.join(testsDir, 'load'),
     };
 
     if (postmanCollection) {
-      config.set('mode', 'postman');
-      config.set('postman_options:config', postmanCollection);
+      config.set('postman:collection', postmanCollection);
     }
 
     this.logStream = new Readable({

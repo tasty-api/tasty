@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^15.1.0",
+    "ajv": "^6.11.0",
     "ansi-to-html": "^0.6.11",
     "async": "^2.6.2",
     "axios": "^0.19.1",
@@ -31,6 +32,7 @@
     "commander": "^2.19.0",
     "esprima": "^4.0.1",
     "form-data": "^3.0.0",
+    "generate-schema": "^2.6.0",
     "jsdoc-to-markdown": "^5.0.0",
     "jsonpath": "^1.0.2",
     "lodash": "^4.17.14",
@@ -41,6 +43,7 @@
     "nconf": "^0.10.0",
     "recursive-readdir": "^2.2.2",
     "require-dir": "^1.2.0",
+    "rimraf": "^3.0.1",
     "uuid": "^3.3.2",
     "winston": "^3.1.0",
     "yl-artillery": "^1.6.0-26"

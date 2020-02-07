@@ -5,6 +5,11 @@ const util = require('util');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
 const Convert = require('ansi-to-html');
+const rimraf = require('rimraf');
+const { promisify } = require('util');
+const parallel = promisify(require('async/parallel'));
+const GenerateSchema = require('generate-schema');
+const axios = require('axios');
 
 const log = require('./log')(module);
 
@@ -24,6 +29,7 @@ module.exports = {
   enhanceNativeLogger,
   resetNativeLogger,
   cloneInstance,
+  buildRegressionTests,
 };
 
 function evalTpl(tpl = '', context = {}) {
@@ -132,4 +138,99 @@ function resetNativeLogger() {
 
 function cloneInstance(instance) {
   return Object.assign(Object.create(instance), instance);
+}
+
+async function buildRegressionTests(opts) {
+  const postmanEndpointsList = _.flattenDeep(getPostmanEndpointsList(opts.postmanCollection));
+
+  const responses = await parallel(
+    _.map(postmanEndpointsList, (endpoint) => {
+      return async () => {
+        try {
+          const response = await axios({
+            method: endpoint.method,
+            url: `${opts.stableServiceHost}/${endpoint.url}`,
+            headers: endpoint.headers,
+            params: endpoint.params,
+            data: endpoint.body,
+          });
+
+          return {
+            endpoint,
+            response,
+            schema: GenerateSchema.json(endpoint.url, response.data),
+          };
+        } catch(err) {
+          return {
+            endpoint,
+            response: err.response,
+            schema: GenerateSchema.json(endpoint.url, err.status !== 500 ? err.response.data : {}),
+          };
+        }
+      };
+    }),
+  );
+
+  const regressionTestsDir = path.join(process.cwd(), 'test', 'func', 'postman_regression_tests');
+
+  if (fs.existsSync(regressionTestsDir)) {
+    rimraf.sync(regressionTestsDir);
+    log.warn('Regression tests have already built. Tasty will overwrite old regression tests');
+  }
+
+  fs.mkdirSync(regressionTestsDir);
+
+  _.forEach(responses, (res, i) => {
+    const template = getTestTemplate(res);
+    log.debug(`${i + 1} - Write test for ${res.endpoint.name}`);
+
+    fs.writeFileSync(path.join(regressionTestsDir, `${res.endpoint.name}.js`), template);
+  });
+
+  return responses;
+}
+
+function getPostmanEndpointsList(i, parentName = '') {
+  if (i.item) return _.map(i.item, (j) => getPostmanEndpointsList(j, i.name));
+
+  if (i.request) {
+    return {
+      name: `${parentName}:${i.name}`,
+      url: _.get(i, ['request', 'url', 'path'], []).join('/'),
+      method: _.get(i, ['request', 'method'], '').toLowerCase(),
+      alias: `${parentName}:${i.name}`,
+      headers: _.chain(_.get(i, ['request', 'header'], []))
+        .keyBy('key')
+        .mapValues('value')
+        .value(),
+      body: _.get(i, ['request', 'body', 'raw'], '{}').startsWith('{') ?
+        JSON.parse(_.get(i, ['request', 'body', 'raw'], '{}')) :
+        _.get(i, ['request', 'body', 'raw']),
+      params: _.chain(_.get(i, ['request', 'url', 'query'], []))
+        .keyBy('key')
+        .mapValues('value')
+        .value(),
+    };
+  }
+}
+
+function getTestTemplate({ endpoint, response, schema }) {
+  return `const app = require('../../../app');
+const tasty = require('tasty-api').tasty;
+
+const regressionSchema = ${JSON.stringify(schema, null, 2)};
+
+tasty.case(
+  'Regress Test for ${endpoint.url}',
+  null,
+  tasty.test(
+    'Regression test for ${endpoint.name} with url ${endpoint.url}',
+    app['${endpoint.alias}'].${endpoint.method}(),
+    {
+      checkStatus: ${response.status},
+      checkStructure: regressionSchema,
+    },
+  ),
+);
+`;
 }

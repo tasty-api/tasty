@@ -5,7 +5,6 @@ const requireDir = require('require-dir');
 const log = require('../libs/log')(module);
 const Resource = require('./Resource');
 const config = require('../config');
-const { POSTMAN_MODE, PROTOCOL_HTTP, PROTOCOL_AMQP } = require('./consts');
 
 /** Class representing an application */
 class App {
@@ -38,19 +37,20 @@ class App {
         recurse: true,
       });
 
-      const mode = config.get('mode');
+      const postmanCollectionFile = config.get('postman:collection');
 
-      if (mode === POSTMAN_MODE) {
-        const configPath = config.get('postman_options:config');
-
-        if (_.isNull(configPath)) throw new Error('Postman collection doesn\'t specify.');
-
-        const content = fs.readFileSync(path.resolve(configPath), { encoding: 'utf-8' });
+      if (postmanCollectionFile) {
+        const content = fs.readFileSync(path.resolve(postmanCollectionFile), { encoding: 'utf-8' });
         const collection = JSON.parse(content);
 
         if (_.isUndefined(_.get(collection, ['info', '_postman_id']))) throw new Error('It doesn\'t seem like a Postman collection.');
 
         this.initFromPostmanCollection(collection);
+      }
+
+      const platformecoDefinitionsDir = config.get('platformeco:definitions');
+      if (platformecoDefinitionsDir) {
+        log.warn('Initialization of endpoints from Platformeco definitions not implemented yet')
       }
     } catch (err) {
       log.error(err.message);
@@ -58,33 +58,29 @@ class App {
     }
   }
 
+  initFromPostmanCollection(i, parentName = '') {
+    if (i.item) return _.forEach(i.item, (j) => this.initFromPostmanCollection(j, i.name));
 
-  initFromPostmanCollection(collection) {
-    let counter = 0;
+    if (i.request) {
+      log.info(`Declare ${i.request.url.path.join('/')} ${i.request.method.toLowerCase()} URL in Tasty App prom Postman collection`);
 
-    const declare = function(i) {
-      if (i.item) return _.forEach(i.item, declare);
-      if (i.request) {
-        counter += 1;
-        log.info(`${counter}) Declare ${i.request.url.path.join('/')} URL in Tasty App prom Postman collection`);
-        return this.declare({
-          url: i.request.url.path.join('/'),
-          method: i.request.method.toLocaleLowerCase(),
-          alias: '', // @todo
-          headers: _.chain(i.request.header || [])
-            .keyBy('key')
-            .mapValues('value')
-            .value(),
-          body: _.get(i, ['request', 'body', 'raw'], '{}').startsWith('{') ? JSON.parse(_.get(i, ['request', 'body', 'raw'], '{}')) : _.get(i, ['request', 'body', 'raw'], '{}'),
-          params: _.chain(i.request.url.query || [])
-            .keyBy('key')
-            .mapValues('value')
-            .value(),
-        });
-      }
-    }.bind(this);
-
-    _.forEach(collection.item, declare);
+      return this.declare({
+        url: i.request.url.path.join('/'),
+        methods: [i.request.method.toLowerCase()],
+        alias: `${parentName}:${i.name}`,
+        headers: _.chain(i.request.header || [])
+          .keyBy('key')
+          .mapValues('value')
+          .value(),
+        body: _.get(i, ['request', 'body', 'raw'], '{}').startsWith('{') ?
+          JSON.parse(_.get(i, ['request', 'body', 'raw'], '{}')) :
+          _.get(i, ['request', 'body', 'raw']),
+        params: _.chain(i.request.url.query || [])
+          .keyBy('key')
+          .mapValues('value')
+          .value(),
+      });
+    }
   }
 
   /**

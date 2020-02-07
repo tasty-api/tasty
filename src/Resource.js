@@ -4,6 +4,7 @@ const Joi = require('@hapi/joi');
 const _ = require('lodash');
 const config = require('../config');
 const driverProvider = require('./DriverProvider');
+const Ajv = require('ajv');
 
 /** Class representing a resource */
 class Resource {
@@ -146,9 +147,20 @@ class Resource {
    */
   checkStructure(jsonSchema) {
     const { res } = this;
-    const { error } = Joi.validate(res.data, jsonSchema);
 
-    assert.isTrue(error === null, error && error.message);
+    if (jsonSchema.isJoi) {
+      const error = Joi.validate(res.data, jsonSchema).error;
+
+      assert.isTrue(error === null, error && error.message);
+    } else {
+      const ajv = new Ajv({ schemaId: 'auto' });
+      ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+
+      const validate = ajv.validate(jsonSchema, res.data);
+
+      assert.isTrue(validate, ajv.errorsText());
+    }
+
   }
 
   /**

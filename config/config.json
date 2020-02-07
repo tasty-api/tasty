@@ -1,7 +1,9 @@
 {
   "env": "develop",
-  "mode": "manual",
-  "postman_options": {
-    "config": null
+  "postman": {
+    "collection": null
+  },
+  "platformeco": {
+    "definitions": null
   }
 }
