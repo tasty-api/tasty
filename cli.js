@@ -27,18 +27,18 @@ program.command('test <file> [files...]')
 
 program.command('build')
   .description('Build tests')
-  .option('-t, --type [type]', 'Type of source - postman or platformeco', 'postman')
-  .option('-p, --path [path]', 'Path to source - Postman collection or Platformeco definitions folder')
-  .option('-S, --stable_service_host [host]', 'specify stable service host for regression test')
+  .option('-t, --type [type]', 'type of source - postman or platformeco', 'postman')
+  .option('-s, --source [path]', 'path to source - Postman collection or Platformeco definitions folder')
+  .option('-h, --host [host]', 'specify stable service host for regression test')
   .action((opts) => {
     if (opts.type === 'postman') {
-      const collectionFile = opts.path;
+      const collectionFile = opts.source;
 
       if (!collectionFile) throw new Error('Postman collection config doesn\'t specify');
 
-      const content = fs.readFileSync(path.resolve(collectionFile), { encoding: 'utf-8' });
+      const content = fs.readFileSync(path.resolve(collectionFile), 'utf8');
       postmanCollection = JSON.parse(content);
-      stableServiceHost = opts.stable_service_host;
+      stableServiceHost = opts.host;
 
       if (_.isUndefined(_.get(postmanCollection, ['info', '_postman_id']))) throw new Error('It doesn\'t seem like a Postman collection');
 
@@ -47,10 +47,16 @@ program.command('build')
       config.set('postman:collection', postmanCollection);
       config.set('postman:stable', stableServiceHost);
     } else {
-      config.set('platformeco:definitions', opts.path);
+      config.set('platformeco:definitions', opts.source);
     }
     mode = BUILD_MODE;
   });
+
+program.on('--help', function(){
+  console.log('');
+  console.log('Examples:');
+  console.log('  $ tasty build -s app/postman_collection.json -h http://www.mystableservice.com');
+});
 
 program
   .version(`${name} ${major}.${minor}.${patch} - ${codename}`, '-v, --version')
