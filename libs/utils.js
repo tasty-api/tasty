@@ -92,9 +92,14 @@ function mapMustacheTpl(obj) {
 }
 
 function mapValuesDeep(value, func) {
-  return _.isObject(value) ?
-    _.mapValues(value, _value => mapValuesDeep(_value, func)) :
-    func(value);
+  switch (true) {
+    case (Array.isArray(value)):
+      return _.map(value, _value => mapValuesDeep(_value, func));
+    case (_.isObject(value)):
+      return _.mapValues(value, _value => mapValuesDeep(_value, func));
+    default:
+      return func(value);
+  }
 }
 
 async function enhanceNativeLogger(logFile = 'log.html', logStream) {
