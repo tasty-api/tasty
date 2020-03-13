@@ -1,6 +1,7 @@
-const axios = require('axios');
-const jsonpath = require('jsonpath');
-const { evalTpl } = require('../libs/utils');
+const driverProvider = require('./DriverProvider');
+const _ = require('lodash');
+const config = require('../config');
+const utils = require('../libs/utils');
 
 const Resource = require('./Resource');
 
@@ -22,10 +23,7 @@ class Service extends Resource {
     super(opts);
 
     this.host = opts.host;
-    this.headers = opts.headers.develop; // @todo Define env from NODE_ENV
-    this.cache = {};
-    this.res = null;
-    this.snapshot = null;
+    this.headers = opts.headers || {};
   }
 
   /**
@@ -33,54 +31,16 @@ class Service extends Resource {
    * @param {object} opts - Request options
    */
   send(opts) {
-    const self = this;
+    const driver = driverProvider.resolve();
 
-    return async function request(context = {}) {
-      const { capture, method, path, headers, params, body, mock } = opts; // @todo Handle all options with evalTpl
-      const pathParam = !!path && evalTpl(path, context);
-
-      self.res = self.getMock(method, mock)
-        ? {
-          headers: self.getHeaders(headers),
-          data: self.getMock(method, mock),
-          // @todo Provide status, statusText, message, body data from mock object
-        }
-        : await axios({
-          url: `${self.host.develop}${pathParam || ''}`, // @todo Define env from NODE_ENV
-          method,
-          headers: self.getHeaders(headers),
-        });
-      self.cache = {};
-      self.snapshot = captureData(capture, self.res);
-
-      return self;
-    };
+    return driver.request(context => ({
+      method: opts.method,
+      url: `${this.host[config.get('env')]}/${utils.evalTpl(opts.path, context)}`,
+      headers: _.assign({}, this.headers[config.get('env')], utils.evalObj(opts.headers, context)),
+      params: utils.evalObj(opts.params, context),
+      body: utils.evalObj(opts.body, context),
+    }), opts.mock, opts.capture, this);
   }
-}
-
-function captureData(capture, requestData) {
-  if (!capture) return {};
-
-  if (Array.isArray(capture)) {
-    return capture.reduce((accruedData, { json, as }) => ({
-      ...accruedData,
-      [as]: getValue(json, requestData),
-    }), {});
-  }
-
-  const { as, json } = capture;
-
-  return {
-    [as]: getValue(json, requestData),
-  };
-}
-
-function getValue(jsonPath, obj) {
-  const rootObj = jsonPath.startsWith('#')
-    ? obj.headers
-    : obj.data;
-
-  return jsonpath.value(rootObj, jsonPath.replace(/^#/, '$'));
 }
 
 module.exports = Service;
