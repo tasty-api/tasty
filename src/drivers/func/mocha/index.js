@@ -44,7 +44,6 @@ async function run(tests, isParallel, logStream) {
 function request(getParams, mock, capture, resource) {
   return {
     getTraceLink: uid => resource.getTraceLink(uid),
-    url: `${getParams({}).url}`,
     send: async (context = {}, uid) => {
       const params = getParams(context);
 
