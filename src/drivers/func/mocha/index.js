@@ -93,8 +93,13 @@ function test(title, request, assertions, tasty) {
 
   if (request.getTraceLink && request.getTraceLink(uid)) {
     Mocha.describe(request.getTraceLink(uid), () => {
-      Mocha.it(`${title} - ${request.url}`, async () => {
+      Mocha.it(`${title}`, async () => {
         const resource = await request.send(tasty.context, uid);
+
+        tasty.context = {
+          ...tasty.context,
+          ...resource.capturedData,
+        };
 
         Object.keys(assertions).forEach(assertion => {
           resource[assertion](assertions[assertion], tasty.context);
@@ -102,7 +107,7 @@ function test(title, request, assertions, tasty) {
       });
     });
   } else {
-    Mocha.it(`${title} - ${request.url}`, async () => {
+    Mocha.it(`${title}`, async () => {
       const resource = await request.send(tasty.context, uid);
 
       Object.keys(assertions).forEach(assertion => {

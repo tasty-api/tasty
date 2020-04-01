@@ -33,7 +33,7 @@ class Tasty {
       send: async () => {
         const resources = await waterfall(actions.map(action => (
           async (resources = []) => {
-            resources.capturedData = resources.capturedData || {};
+            resources.capturedData = resources.capturedData || this.context;
 
             const resource = await action.send(resources.capturedData);
 
@@ -49,7 +49,6 @@ class Tasty {
         )));
 
         this.context = {
-          ...this.context,
           ...resources.capturedData,
         };
 
