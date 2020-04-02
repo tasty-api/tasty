@@ -90,25 +90,23 @@ async function suite(title, actions, tasty, prepare) {
 
 function test(title, request, assertions, tasty) {
   const uid = uuid();
+  const traceLink = request.getTraceLink && request.getTraceLink(uid);
 
-  if (request.getTraceLink && request.getTraceLink(uid)) {
-    Mocha.describe(request.getTraceLink(uid), () => {
-      Mocha.it(`${title}`, async () => {
-        const resource = await request.send(tasty.context, uid);
-
-        tasty.context = {
-          ...tasty.context,
-          ...resource.capturedData,
-        };
-
-        Object.keys(assertions).forEach(assertion => {
-          resource[assertion](assertions[assertion], tasty.context);
-        });
-      });
+  if (traceLink)
+    Mocha.describe(traceLink, () => {
+      _MochaTest();
     });
-  } else {
+  else
+    _MochaTest();
+
+  function _MochaTest() {
     Mocha.it(`${title}`, async () => {
-      const resource = await request.send(tasty.context, uid);
+      const resource = await request.send(tasty.context, !!traceLink && uid);
+
+      tasty.context = {
+        ...tasty.context,
+        ...resource.capturedData,
+      };
 
       Object.keys(assertions).forEach(assertion => {
         resource[assertion](assertions[assertion], tasty.context);
@@ -125,11 +123,13 @@ function tests(title, tests, request, assertions, isParallel, tasty) {
 
     tests.forEach(test => {
       const uid = uuid();
+      const traceLink = request.getTraceLink(uid);
 
-      test.trace = {
-        id: uid,
-        link: request.getTraceLink(uid),
-      };
+      if (traceLink)
+        test.trace = {
+          id: uid,
+          link: traceLink,
+        };
     });
 
     Mocha.before(async () => {
@@ -138,44 +138,65 @@ function tests(title, tests, request, assertions, isParallel, tasty) {
           await request.send({
             ...tasty.context,
             test,
-          }, trace.id)
+          }, !!trace && trace.id)
         )
       )));
     });
 
     tests.forEach(({ trace, ...test }, i) => {
-      Mocha.describe(trace.link, () => {
-        Mocha.it(utils.evalTpl(title, { test }), () => {
+      const context = {
+        ...tasty.context,
+        test,
+      };
+
+      if (trace)
+        Mocha.describe(trace.link, () => {
+          _parallelMochaTest();
+        });
+      else
+        _parallelMochaTest();
+
+      function _parallelMochaTest() {
+        Mocha.it(utils.evalTpl(title, context), () => {
           Object.keys(assertions).forEach(assertion => {
             const value = typeof assertions[assertion] === 'string'
-              ? utils.evalTpl(assertions[assertion], { test })
+              ? utils.evalTpl(assertions[assertion], context)
               : assertions[assertion];
 
-            resources[i][assertion](value, { test });
+            resources[i][assertion](value, context);
           });
         });
-      });
+      }
     });
   } else {
     tests.forEach((test) => {
       const uid = uuid();
+      const link = request.getTraceLink(uid);
+      const context = {
+        ...tasty.context,
+        test,
+      };
 
-      Mocha.describe(request.getTraceLink(uid), () => {
-        Mocha.it(utils.evalTpl(title, { test }), async () => {
-          const resource = await request.send({
-            ...tasty.context,
-            test,
-          }, uid);
+      if (!_.isNull(link))
+        Mocha.describe(request.getTraceLink(uid), () => {
+          _seriesMochaTest();
+        });
+      else
+        _seriesMochaTest();
+
+      function _seriesMochaTest() {
+        Mocha.it(utils.evalTpl(title, context), async () => {
+          const resource = await request.send(context, uid);
 
           Object.keys(assertions).forEach(assertion => {
             const value = typeof assertions[assertion] === 'string'
-              ? utils.evalTpl(assertions[assertion], { test })
+              ? utils.evalTpl(assertions[assertion], context)
               : assertions[assertion];
 
-            resource[assertion](value, { test });
+            resource[assertion](value, context);
           });
         });
-      });
+      }
     });
   }
 }

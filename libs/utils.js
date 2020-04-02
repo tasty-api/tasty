@@ -142,7 +142,7 @@ function resetNativeLogger() {
 }
 
 function cloneInstance(instance) {
-  return Object.assign(Object.create(instance), instance);
+  return _.cloneDeep(instance);
 }
 
 async function buildRegressionTests(opts) {
