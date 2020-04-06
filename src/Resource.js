@@ -205,12 +205,15 @@ class Resource {
 
       this.cache = {};
 
+      //check if type of the body is text/plain, or other text types:
+      const isTextBody = typeof this.body === 'string' && (/^(text).*/.test(this.headers['content-type']) || /^(text).*/.test(this.headers['Content-Type']));
+
       return driver.request(context => ({
         method,
         url: `${this.app.host[config.get('env')]}/${this.url}${utils.evalTpl(opts.path, context)}`,
         headers: _.assign({}, this.headers, cache.headers, utils.evalObj(opts.headers, context)),
         params: _.assign({}, this.params, cache.params, utils.evalObj(opts.params, context)),
-        body: _.assign({}, this.body, cache.body, utils.evalObj(opts.body, context)),
+        body: !isTextBody ? _.assign({}, this.body, cache.body, utils.evalObj(opts.body, context)) : this.body,
         formData: opts.formData,
       }), opts.mock || cache.mock || this.mock[method], opts.capture, this, { method, ...opts }, cache);
     };
