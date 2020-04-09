@@ -5,6 +5,7 @@ const _ = require('lodash');
 const config = require('../config');
 const driverProvider = require('./DriverProvider');
 const Ajv = require('ajv');
+const ReqDrvStructProcessor = require('./SyncConveyor');
 
 /** Class representing a resource */
 class Resource {
@@ -192,6 +193,110 @@ class Resource {
     );
   }
 
+
+  _getRequestCb({ method, opts, cache } = {
+    method: requiredParam('method'),
+    opts: requiredParam('opts'),
+    cache: requiredParam('cache')
+  }) {
+
+    // 1 - constructing the middleware conveyor instance where each middleware will know and modify the same structure ({url,headers,params, etc.}) it also can modify the structure based on its properties' values, like when we construct the body we should know what headers came from all sources
+    const requestStructConv = new ReqDrvStructProcessor({ method });
+
+    // 2 - define the single resources structure for all middlewares:
+    const middlewareResource = {
+      resource: this, // resource instance (mainly set in declaration block)
+      cache, // cache (populated by calling setHeaders(), setBody(), etc. methods)
+      opts, // options from test: initiated call of app['<alias>'].<verb>({<options_are_defined_here>})
+    };
+
+    // 3 - constructing middlewares of the conveyor (the sequence of middlewares must be defined!):
+    const urlMw = () => (function (middlewareResources, context, next) {
+      const { resource, opts } = middlewareResources;
+      //"this" now stores all the data that has been collected inside the conveyor before current middleware
+      this.url = `${resource.app.host[config.get('env')]}/${resource.url}${utils.evalTpl(opts.path, context)}`;
+
+      next();
+    });
+
+    const headersMw = () => (function (middlewareResources, context, next) {
+      const { resource, cache, opts } = middlewareResources;
+
+      this.headers = _.assign(
+        {},
+        resource.headers, // do not eval headers which has been set in declaration block
+        utils.evalObj(cache.headers, context),
+        utils.evalObj(opts.headers, context)
+      );
+
+      next();
+    });
+
+    const paramsMw = () => (function (middlewareResources, context, next) {
+      const { resource, cache, opts } = middlewareResources;
+
+      this.params = _.assign(
+        {},
+        resource.params, //  do not eval params which has been set in declaration block
+        utils.evalObj(cache.params, context),
+        utils.evalObj(opts.params, context)
+      );
+
+      next();
+    });
+
+    const bodyMw = () => (function (middlewareResources, context, next) {
+      const { resource, cache, opts } = middlewareResources;
+
+      // TODO make decision: headers are case-sensitive or case insensitive
+      // TODO be careful with headers like Authorization: they may not be accepted by the designed API if passed in lowercase
+
+      //check what headers has been set before calling this middleware:
+      const contentType = this.headers['content-type'] || this.headers['Content-Type'];
+
+      switch (true) {
+        case /^(application\/json).*/.test(contentType):
+          this.body = bodyProcessor['application/json']({ resource, cache, opts, context });
+          break;
+        default:
+          this.body = opts.body || cache.body || resource.body ;
+          break;
+      }
+
+      next();
+    });
+
+    const formDataMw = () => (function (middlewareResources, context, next) {
+      this.formData = middlewareResources.opts.formData;
+      next();
+    });
+
+    //body processor - structure that processes the body inside the middleware
+    const bodyProcessor = {
+      'application/json': function ({ resource, cache, opts, context }) {
+        return _.assign(
+          {},
+          resource.body, // we do not eval body in declaration block
+          utils.evalObj(cache.body, context), // eval body that has been set in setBody() method if it has been initiated
+          utils.evalObj(opts.body, context)); // eval body that has been set directly inside get() or post(), etc
+      }
+    };
+
+    //4 - return callback for the first parameter of driver.request() method:
+    return (context) => {
+
+      // populate the middleware manager by created middlewares:
+      requestStructConv.use(urlMw());
+      requestStructConv.use(headersMw());
+      requestStructConv.use(paramsMw());
+      requestStructConv.use(bodyMw());
+      requestStructConv.use(formDataMw());
+
+      // run middleware manager
+      return requestStructConv.run(middlewareResource, context);
+    };
+  }
+
   /**
    * Create method for Resource
    * @param {string} method - Method name for registration in Resource
@@ -205,16 +310,13 @@ class Resource {
 
       this.cache = {};
 
-      return driver.request(context => ({
-        method,
-        url: `${this.app.host[config.get('env')]}/${this.url}${utils.evalTpl(opts.path, context)}`,
-        headers: _.assign({}, this.headers, cache.headers, utils.evalObj(opts.headers, context)),
-        params: _.assign({}, this.params, cache.params, utils.evalObj(opts.params, context)),
-        body: _.assign({}, this.body, cache.body, utils.evalObj(opts.body, context)),
-        formData: opts.formData,
-      }), opts.mock || cache.mock || this.mock[method], opts.capture, this, { method, ...opts }, cache);
+
+      return driver.request(this._getRequestCb({ method, opts, cache }), opts.mock || cache.mock || this.mock[method], opts.capture, this, { method, ...opts }, cache);
     };
   }
 }
 
+const requiredParam = (paramName) => {
+  throw new Error(`parameter ${paramName} is required!`);
+};
 module.exports = Resource;
