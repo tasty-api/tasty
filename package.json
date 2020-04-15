@@ -1,6 +1,6 @@
 {
   "name": "tasty-api",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
