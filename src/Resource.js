@@ -200,17 +200,15 @@ class Resource {
     cache: requiredParam('cache')
   }) {
 
-    // 1 - constructing the middleware conveyor instance where each middleware will know and modify the same structure ({url,headers,params, etc.}) it also can modify the structure based on its properties' values, like when we construct the body we should know what headers came from all sources
+    // middleware conveyor
     const requestStructConv = new ReqDrvStructProcessor({ method });
 
-    // 2 - define the single resources structure for all middlewares:
     const middlewareResource = {
       resource: this, // resource instance (mainly set in declaration block)
       cache, // cache (populated by calling setHeaders(), setBody(), etc. methods)
       opts, // options from test: initiated call of app['<alias>'].<verb>({<options_are_defined_here>})
     };
 
-    // 3 - constructing middlewares of the conveyor (the sequence of middlewares must be defined!):
     const urlMw = () => (function (middlewareResources, context, next) {
       const { resource, opts } = middlewareResources;
       //"this" now stores all the data that has been collected inside the conveyor before current middleware
@@ -251,7 +249,6 @@ class Resource {
       // TODO make decision: headers are case-sensitive or case insensitive
       // TODO be careful with headers like Authorization: they may not be accepted by the designed API if passed in lowercase
 
-      //check what headers has been set before calling this middleware:
       const contentType = this.headers['content-type'] || this.headers['Content-Type'];
 
       switch (true) {
@@ -259,7 +256,7 @@ class Resource {
           this.body = bodyProcessor['application/json']({ resource, cache, opts, context });
           break;
         default:
-          this.body = opts.body || cache.body || resource.body ;
+          this.body = opts.body || cache.body || resource.body;
           break;
       }
 
@@ -268,6 +265,7 @@ class Resource {
 
     const formDataMw = () => (function (middlewareResources, context, next) {
       this.formData = middlewareResources.opts.formData;
+
       next();
     });
 
@@ -282,17 +280,15 @@ class Resource {
       }
     };
 
-    //4 - return callback for the first parameter of driver.request() method:
     return (context) => {
 
-      // populate the middleware manager by created middlewares:
       requestStructConv.use(urlMw());
-      requestStructConv.use(headersMw());
+      /**it is very important to use defined sequence of middlewares!**/
+      requestStructConv.use(headersMw());// !use headers middleware before body middleware, because, in the body middleware there is header checking
       requestStructConv.use(paramsMw());
       requestStructConv.use(bodyMw());
       requestStructConv.use(formDataMw());
 
-      // run middleware manager
       return requestStructConv.run(middlewareResource, context);
     };
   }

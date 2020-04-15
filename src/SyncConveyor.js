@@ -6,7 +6,6 @@ module.exports = class SyncConveyor {
 
   constructor(initialStruct = null) {
     this.ctx = initialStruct || {};
-    //middleware:
     this.middleware = [];
   }
 
@@ -21,9 +20,8 @@ module.exports = class SyncConveyor {
   }
 
   executeMiddleware(middleware, ...customArgs) {
-    //call every middleware with this.ctx
+
     function executor(index) {
-      // if we areat the end of middlewares list
       if (index === middleware.length) {
         return this.ctx;
       }
