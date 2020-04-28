@@ -31,53 +31,58 @@ function get(files) {
 }
 
 async function run(scenarios, isParallel, logStream) {
-  const hosts = config.get('hosts');
-  const env = config.get('env');
-  const cfg = {
-    config: {
-      target: hosts[env],
-    },
-    scenarios,
-  };
+  try {
+    const hosts = config.get('hosts');
 
-  _.merge(cfg, require(config.get('load_cfg')));
+    const env = config.get('env');
+    const cfg = {
+      config: {
+        target: hosts[env],
+      },
+      scenarios,
+    };
 
-  const logFile = path.join(process.cwd(), 'reports', 'load', Date.now().toString(), 'index.html');
+    _.merge(cfg, require(config.get('load_cfg')));
 
-  await writeFile(path.resolve(TEMP_LOAD_CONFIG), JSON.stringify(cfg, null, 2));
+    const logFile = path.join(process.cwd(), 'reports', 'load', Date.now().toString(), 'index.html');
 
-  await utils.enhanceNativeLogger('load_log.html', logStream);
+    await writeFile(path.resolve(TEMP_LOAD_CONFIG), JSON.stringify(cfg, null, 2));
 
-  await loadRun(TEMP_LOAD_CONFIG, {
-    ...(logFile ? {
-      output: TEMP_LOAD_OUTPUT,
-      // quiet: true,
-    } : {}),
-  });
+    await utils.enhanceNativeLogger('load_log.html', logStream);
 
-  utils.resetNativeLogger();
-  let stats;
-  if (logFile) {
-    const { dir } = path.parse(logFile);
-
-    try {
-      await mkdir(dir);
-    } catch (err) {
-      logger.warn(`${err.path} directory has already created`);
-    }
-
-    artillery.report(TEMP_LOAD_OUTPUT, {
-      output: logFile,
+    await loadRun(TEMP_LOAD_CONFIG, {
+      ...(logFile ? {
+        output: TEMP_LOAD_OUTPUT,
+        // quiet: true,
+      } : {}),
     });
 
-    stats = fs.readFileSync(TEMP_LOAD_OUTPUT);
+    utils.resetNativeLogger();
+    let stats;
+    if (logFile) {
+      const { dir } = path.parse(logFile);
 
-    await unlink(TEMP_LOAD_OUTPUT);
+      try {
+        await mkdir(dir);
+      } catch (err) {
+        logger.warn(`${err.path} directory has already created`);
+      }
+
+      artillery.report(TEMP_LOAD_OUTPUT, {
+        output: logFile,
+      });
+
+      stats = fs.readFileSync(TEMP_LOAD_OUTPUT);
+
+      await unlink(TEMP_LOAD_OUTPUT);
+    }
+
+    await unlink(TEMP_LOAD_CONFIG);
+
+    return JSON.parse(stats.toString());
+  } catch(err) {
+    await Promise.reject(new Error(err));
   }
-
-  await unlink(TEMP_LOAD_CONFIG);
-
-  return JSON.parse(stats.toString());
 }
 
 function request(getParams, mock, capture, resource, opts, cache) {
