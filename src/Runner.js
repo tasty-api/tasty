@@ -8,6 +8,12 @@ const config = require('../config');
 
 const DEFAULT_TYPE = 'func';
 
+const RUNNER_STATUS = {
+  IN_PROCESS: 'inProcess',
+  IN_PENDING: 'inPending',
+  FAILED: 'failed',
+};
+
 /** Class representing a test runner */
 class Runner {
   /**
@@ -57,11 +63,15 @@ class Runner {
     const testsFiles = files.length ? files : await this._getTestsFiles(type);
     const tests = driver.get(testsFiles);
 
-    this.status = 'inProcess';
+    this.status = RUNNER_STATUS.IN_PROCESS;
 
-    const stats =  await driver.run(tests, isParallel, this.logStream);
+    const stats =  await driver.run(tests, isParallel, this.logStream).catch(err => {
+      this.status = RUNNER_STATUS.FAILED;
 
-    this.status = 'inPending';
+      throw err;
+    });
+
+    this.status = RUNNER_STATUS.IN_PENDING;
 
     return stats;
   }
