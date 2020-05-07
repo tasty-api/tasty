@@ -30,15 +30,19 @@ function get(files) {
 }
 
 async function run(tests, isParallel, logStream) {
-  await utils.enhanceNativeLogger('func_log.html', logStream);
+  try {
+    await utils.enhanceNativeLogger('func_log.html', logStream);
 
-  const stats = isParallel
-    ? await concat(tests, runTest)
-    : await concatSeries(tests, runTest);
+    const stats = isParallel
+      ? await concat(tests, runTest)
+      : await concatSeries(tests, runTest);
 
-  utils.resetNativeLogger();
+    utils.resetNativeLogger();
 
-  return formatStats(stats, isParallel);
+    return formatStats(stats, isParallel);
+  } catch(err) {
+    await Promise.reject(new Error(err));
+  }
 }
 
 function request(getParams, mock, capture, resource) {
@@ -229,9 +233,13 @@ function getMocha(file, reportDir) {
 }
 
 function runTest(test, cb) {
-  const runner = test.run(() => {
-    cb(null, runner.stats);
-  });
+  try {
+    const runner = test.run(() => {
+      cb(null, runner.stats);
+    });
+  } catch(err) {
+    cb(err);
+  }
 }
 
 function formatStats(stats, isParallel) {
