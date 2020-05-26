@@ -29,13 +29,13 @@ function get(files) {
   return files.map(file => getMocha(file, reportDir));
 }
 
-async function run(tests, isParallel, logStream) {
+async function run(tests, isParallel, logStream, eventHandlersMap) {
   try {
     await utils.enhanceNativeLogger('func_log.html', logStream);
 
     const stats = isParallel
-      ? await concat(tests, runTest)
-      : await concatSeries(tests, runTest);
+      ? await concat(tests, _.partial(runTest, eventHandlersMap))
+      : await concatSeries(tests, _.partial(runTest, eventHandlersMap));
 
     utils.resetNativeLogger();
 
@@ -232,9 +232,10 @@ function getMocha(file, reportDir) {
   return mocha.addFile(path.resolve(file));
 }
 
-function runTest(test, cb) {
+function runTest(eventHandlersMap, test, cb) {
   try {
     const runner = test.run(() => {
+      eventHandlersMap.onTestEnd();
       cb(null, runner.stats);
     });
   } catch(err) {
