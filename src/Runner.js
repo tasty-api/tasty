@@ -75,6 +75,10 @@ class Runner {
 
     this.status = RUNNER_STATUS.IN_PENDING;
 
+    const statsFile = path.join(process.cwd(), 'logs', type === 'func' ? 'func_stats.json' : 'load_stats.json');
+
+    fs.writeFileSync(statsFile, JSON.stringify(stats), { encoding: 'utf8' });
+
     return stats;
   }
 
