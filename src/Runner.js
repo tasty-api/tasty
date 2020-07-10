@@ -54,8 +54,10 @@ class Runner {
    * @param {string} type - Type of tests, could be func or load
    * @param {boolean} isParallel - Flag for running tests in parallel mode
    * @param {string[]} [files] - Files for testing
+   * @param {object} eventHandlersMap - Map of functions to be executed
+   * @param {Function} eventHandlersMap.onTestEnd - Callback to be executed after a single test ends
    */
-  async run(type = DEFAULT_TYPE, isParallel = false, files = []) {
+  async run(type = DEFAULT_TYPE, isParallel = false, files = [], eventHandlersMap) {
     this.type = type;
     driverProvider.setRunType(type);
 
@@ -65,13 +67,17 @@ class Runner {
 
     this.status = RUNNER_STATUS.IN_PROCESS;
 
-    const stats =  await driver.run(tests, isParallel, this.logStream).catch(err => {
+    const stats =  await driver.run(tests, isParallel, this.logStream, eventHandlersMap).catch(err => {
       this.status = RUNNER_STATUS.FAILED;
 
       throw err;
     });
 
     this.status = RUNNER_STATUS.IN_PENDING;
+
+    const statsFile = path.join(process.cwd(), 'logs', type === 'func' ? 'func_stats.json' : 'load_stats.json');
+
+    fs.writeFileSync(statsFile, JSON.stringify(stats), { encoding: 'utf8' });
 
     return stats;
   }
