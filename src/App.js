@@ -9,13 +9,13 @@ const config = require('../config');
 /** Class representing an application */
 class App {
   /**
-   * Create an application
+   * Create an application with name and configuration
    * @param {string} name - Application name
-   * @param {object} cfg - Application configuration
-   * @property {object} cfg.host - Hosts' list by environment
-   * @property {string} cfg.host.develop - Host for development environment
-   * @property {string} cfg.host.testing - Host for testing environment
-   * @property {string} cfg.host.product - Host for production environment
+   * @param {object} config - Application configuration
+   * @property {object} config.host - Hosts' list by environment
+   * @property {string} config.host.develop - Host for development environment
+   * @property {string} config.host.testing - Host for testing environment
+   * @property {string} config.host.product - Host for production environment
    */
   constructor(name, cfg) {
     this.name = name;
