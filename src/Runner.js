@@ -116,7 +116,7 @@ class Runner {
     const files = await recursive(path.join(this[type].dir));
     const tests = _.get(this, 'filters.tests', files);
 
-    if (!tests.length) return files;
+    if (!tests.length) return files; //@todo check if needed
 
     return _.filter(files, file => _.includes(tests, file));
     // @todo Make sorts
