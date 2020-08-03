@@ -1,0 +1,34 @@
+{
+	"info": {
+		"_postman_id": "test",
+		"name": "Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Test",
+			"item": [
+				{
+					"name": "Get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:4000/test",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"test"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}
