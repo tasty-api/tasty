@@ -29,6 +29,7 @@
     "async": "^2.6.2",
     "axios": "^0.19.1",
     "chai": "^4.2.0",
+    "chai-spies": "^1.0.0",
     "commander": "^2.19.0",
     "esprima": "^4.0.1",
     "form-data": "^3.0.0",
