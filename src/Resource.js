@@ -6,6 +6,7 @@ const config = require('../config');
 const driverProvider = require('./DriverProvider');
 const Ajv = require('ajv');
 const ReqDrvStructProcessor = require('./SyncConveyor');
+const deepmerge = require('deepmerge');
 
 /** Class representing a resource */
 class Resource {
@@ -272,12 +273,14 @@ class Resource {
     //body processor - structure that processes the body inside the middleware
     const bodyProcessor = {
       'application/json': function ({ resource, cache, opts, context }) {
-        return _.assign(
-          {},
-          resource.body, // we do not eval body in declaration block
-          utils.evalObj(cache.body, context), // eval body that has been set in setBody() method if it has been initiated
-          utils.evalObj(opts.body, context)); // eval body that has been set directly inside get() or post(), etc
-      }
+        return deepmerge(
+          deepmerge(
+            resource.body, // we do not eval body in declaration block
+            utils.evalObj(cache.body, context), // eval body that has been set in setBody() method if it has been initiated
+          ),
+          utils.evalObj(opts.body, context), // eval body that has been set directly inside get() or post(), etc
+        );
+      },
     };
 
     return (context) => {
