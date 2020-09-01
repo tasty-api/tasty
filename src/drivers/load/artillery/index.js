@@ -92,7 +92,7 @@ function request(getParams, mock, capture, resource, opts, cache) {
 
   return {
     [opts.method]: {
-      url: `/${resource.url}${opts.path ? `/${opts.path}` : ''}`,
+      url: `${resource.url ? `/${resource.url}` : ''}${opts.path ? `/${opts.path}` : ''}`,
       ...(_.isEmpty(headers) ? {} : { headers }),
       ...(_.isEmpty(params) ? {} : { qs: params }),
       ...(_.isEmpty(body) ? {} : { json: body }),

@@ -1,6 +1,6 @@
 {
   "name": "tasty-api",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
@@ -30,6 +30,7 @@
     "axios": "^0.19.1",
     "chai": "^4.2.0",
     "commander": "^2.19.0",
+    "deepmerge": "^4.2.2",
     "esprima": "^4.0.1",
     "form-data": "^3.0.0",
     "generate-schema": "^2.6.0",
