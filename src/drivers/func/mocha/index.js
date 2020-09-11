@@ -235,7 +235,7 @@ function getMocha(file, reportDir) {
 function runTest(eventHandlersMap, test, cb) {
   try {
     const runner = test.run(() => {
-      eventHandlersMap.onTestEnd();
+      _.get(eventHandlersMap, 'onTestEnd', () => {})();
       cb(null, runner.stats);
     });
   } catch(err) {
