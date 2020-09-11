@@ -1,6 +1,5 @@
 const assert = require('chai').assert;
 const utils = require('../libs/utils');
-const Joi = require('@hapi/joi');
 const _ = require('lodash');
 const config = require('../config');
 const driverProvider = require('./DriverProvider');
@@ -151,7 +150,7 @@ class Resource {
     const { res } = this;
 
     if (jsonSchema.isJoi) {
-      const error = Joi.validate(res.data, jsonSchema).error;
+      const error = jsonSchema.validate(res.data).error;
 
       assert.isTrue(error === null, error && error.message);
     } else {
