@@ -7,7 +7,7 @@ const parallel = promisify(require('async/parallel'));
 const concat = promisify(require('async/concat'));
 const concatSeries = promisify(require('async/concatSeries'));
 const config = require('../../../../config');
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const FormData = require('form-data');
 
 const utils = require('../../../../libs/utils');
