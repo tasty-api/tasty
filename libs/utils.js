@@ -10,6 +10,7 @@ const { promisify } = require('util');
 const parallel = promisify(require('async/parallel'));
 const GenerateSchema = require('generate-schema');
 const axios = require('axios');
+const Base = require('mocha/lib/reporters/base');
 
 const log = require('./log')(module);
 
@@ -18,7 +19,7 @@ const mkdir = util.promisify(mkdirp);
 
 const convert = new Convert();
 
-const NATIVE_LOGGER = console.log;
+const NATIVE_LOGGER = Base.consoleLog;
 
 module.exports = {
   evalTpl,
@@ -119,7 +120,7 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
     }
   }
 
-  console.log = function log(...args) {
+  Base.consoleLog = function log(...args) {
     if (args.length) {
       const [tpl, ...tail] = args;
 
@@ -138,7 +139,7 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
 }
 
 function resetNativeLogger() {
-  console.log = NATIVE_LOGGER;
+  Base.consoleLog = NATIVE_LOGGER;
 }
 
 function cloneInstance(instance) {
