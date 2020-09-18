@@ -1,6 +1,6 @@
 {
   "name": "tasty-api",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
@@ -23,34 +23,34 @@
     "tasty": "./cli.js"
   },
   "dependencies": {
-    "@hapi/joi": "^15.1.0",
-    "ajv": "^6.11.0",
-    "ansi-to-html": "^0.6.11",
-    "async": "^2.6.2",
-    "axios": "^0.19.1",
+    "joi": "^17.2.1",
+    "ajv": "^6.12.4",
+    "ansi-to-html": "^0.6.14",
+    "async": "^3.2.0",
+    "axios": "^0.20.0",
     "chai": "^4.2.0",
-    "commander": "^2.19.0",
+    "commander": "^6.1.0",
     "deepmerge": "^4.2.2",
     "esprima": "^4.0.1",
     "form-data": "^3.0.0",
     "generate-schema": "^2.6.0",
-    "jsdoc-to-markdown": "^5.0.0",
+    "jsdoc-to-markdown": "^6.0.1",
     "jsonpath": "^1.0.2",
-    "lodash": "^4.17.14",
+    "lodash": "^4.17.20",
     "lodash.get": "^4.4.2",
-    "mkdirp": "^0.5.1",
-    "mocha": "6.1.3",
-    "mochawesome": "^4.0.1",
+    "mkdirp": "^1.0.4",
+    "mocha": "8.1.3",
+    "mochawesome": "^6.1.1",
     "nconf": "^0.10.0",
     "recursive-readdir": "^2.2.2",
     "require-dir": "^1.2.0",
-    "rimraf": "^3.0.1",
-    "uuid": "^3.3.2",
-    "winston": "^3.1.0",
+    "rimraf": "^3.0.2",
+    "uuid": "^8.3.0",
+    "winston": "^3.3.3",
     "yl-artillery": "^1.6.0-26"
   },
   "devDependencies": {
-    "eslint": "^5.16.0",
-    "nyc": "^14.1.1"
+    "eslint": "^7.8.1",
+    "nyc": "^15.1.0"
   }
 }
