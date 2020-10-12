@@ -34,9 +34,28 @@ module.exports = {
 };
 
 function evalTpl(tpl = '', context = {}) {
-  const func = new Function(`with(this) { return ${'`' + tpl + '`'}; }`);
+  const regexp = /\${(\w*)}/g;
+  const ctxPaths = [];
+  let matchArray;
 
-  return func.call(context);
+  while ((matchArray = regexp.exec(tpl)) !== null) {
+    ctxPaths.push({
+      template: matchArray[0],
+      path: matchArray[1],
+    });
+  }
+
+  if (!_.size(ctxPaths)) return tpl;
+
+  if (_.size(ctxPaths) === 1) {
+    return _.isEqual(ctxPaths[0].template, tpl.trim()) ?
+      _.get(context, ctxPaths[0].path) :
+      tpl.replace(ctxPaths[0].template, _.get(context, ctxPaths[0].path));
+  } else {
+    return _.reduce(ctxPaths, (result, ctxPath) => {
+      return result.replace(ctxPath.template, _.get(context, ctxPath.path));
+    }, tpl);
+  }
 }
 
 function evalObj(obj = {}, context) {
