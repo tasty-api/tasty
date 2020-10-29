@@ -10,6 +10,7 @@ const { promisify } = require('util');
 const parallel = promisify(require('async/parallel'));
 const GenerateSchema = require('generate-schema');
 const axios = require('axios');
+const Base = require('mocha/lib/reporters/base');
 
 const log = require('./log')(module);
 
@@ -18,7 +19,7 @@ const mkdir = util.promisify(mkdirp);
 
 const convert = new Convert();
 
-const NATIVE_LOGGER = console.log;
+const NATIVE_LOGGER = Base.consoleLog;
 
 module.exports = {
   evalTpl,
@@ -33,9 +34,28 @@ module.exports = {
 };
 
 function evalTpl(tpl = '', context = {}) {
-  const func = new Function(`with(this) { return ${'`' + tpl + '`'}; }`);
+  const regexp = /\${(\w*)}/g;
+  const ctxPaths = [];
+  let matchArray;
 
-  return func.call(context);
+  while ((matchArray = regexp.exec(tpl)) !== null) {
+    ctxPaths.push({
+      template: matchArray[0],
+      path: matchArray[1],
+    });
+  }
+
+  if (!_.size(ctxPaths)) return tpl;
+
+  if (_.size(ctxPaths) === 1) {
+    return _.isEqual(ctxPaths[0].template, tpl.trim()) ?
+      _.get(context, ctxPaths[0].path) :
+      tpl.replace(ctxPaths[0].template, _.get(context, ctxPaths[0].path));
+  } else {
+    return _.reduce(ctxPaths, (result, ctxPath) => {
+      return result.replace(ctxPath.template, _.get(context, ctxPath.path));
+    }, tpl);
+  }
 }
 
 function evalObj(obj = {}, context) {
@@ -119,7 +139,7 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
     }
   }
 
-  console.log = function log(...args) {
+  Base.consoleLog = function log(...args) {
     if (args.length) {
       const [tpl, ...tail] = args;
 
@@ -138,7 +158,7 @@ async function enhanceNativeLogger(logFile = 'log.html', logStream) {
 }
 
 function resetNativeLogger() {
-  console.log = NATIVE_LOGGER;
+  Base.consoleLog = NATIVE_LOGGER;
 }
 
 function cloneInstance(instance) {

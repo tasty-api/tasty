@@ -7,7 +7,7 @@ const parallel = promisify(require('async/parallel'));
 const concat = promisify(require('async/concat'));
 const concatSeries = promisify(require('async/concatSeries'));
 const config = require('../../../../config');
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const FormData = require('form-data');
 
 const utils = require('../../../../libs/utils');
@@ -29,13 +29,13 @@ function get(files) {
   return files.map(file => getMocha(file, reportDir));
 }
 
-async function run(tests, isParallel, logStream) {
+async function run(tests, isParallel, logStream, eventHandlersMap) {
   try {
     await utils.enhanceNativeLogger('func_log.html', logStream);
 
     const stats = isParallel
-      ? await concat(tests, runTest)
-      : await concatSeries(tests, runTest);
+      ? await concat(tests, _.partial(runTest, eventHandlersMap))
+      : await concatSeries(tests, _.partial(runTest, eventHandlersMap));
 
     utils.resetNativeLogger();
 
@@ -232,9 +232,10 @@ function getMocha(file, reportDir) {
   return mocha.addFile(path.resolve(file));
 }
 
-function runTest(test, cb) {
+function runTest(eventHandlersMap, test, cb) {
   try {
     const runner = test.run(() => {
+      _.get(eventHandlersMap, 'onTestEnd', () => {})();
       cb(null, runner.stats);
     });
   } catch(err) {
