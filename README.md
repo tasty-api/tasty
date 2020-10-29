@@ -1,14 +1,13 @@
 <p align="center">
-  <img src="src/assets/logo.svg" >
+  <img alt="TastyJS" src="https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/logos/tasty-new.svg" />
 </p>
-
 
 # TastyJS [![CircleCI](https://circleci.com/gh/tasty-api/tasty/tree/master.svg?style=svg)](https://circleci.com/gh/tasty-api/tasty/tree/master)
 
 TastyJS is an API testing framework which will make your testing process tastier.
 
 TastyJS doesn't pretend to be a Swizz knife in testing world. It's a syntactic sugar above mocha and other testing kitchen
-stuf related to api testing. The main goal is make api testing process as easier as it possible.
+stuff related to api testing. The main goal is make api testing process as easy as it possible.
 
 You don't need to know anything about testing standards, dictionary, and community conventions.
 
@@ -25,9 +24,9 @@ If you want to focus on the essence of api testing, and want to increase the spe
 Every `Application` has list of `Resources`  
 one `Resouce` describe single REST API url - `path` and related configuration  
 
-There is `Service` - mock abstraction for `Resource`, that allow to declare required `Resource` headers, status codes, response in declarative maner and use for TDD development  
+There is `Service` - mock abstraction for `Resource`, that allow declaring required `Resource` headers, status codes, response in declarative manner and use for TDD development  
 
-`TastyJS` provides interface for testing each `Resource` with specific api:
+`TastyJS` provides an interface for testing each `Resource` with specific api:
 
 ### TEST API
 
@@ -75,3 +74,7 @@ tasty.case('Tests for /product',
   app.logout.post(),
 );
 ```
+
+## Sponsors
+![Leroy Merlin](https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/sponsors/LM.svg)
+![LM Tech](https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/sponsors/LM-tech.svg)
