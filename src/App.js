@@ -50,7 +50,7 @@ class App {
 
       const platformecoDefinitionsDir = config.get('platformeco:definitions');
       if (platformecoDefinitionsDir) {
-        log.warn('Initialization of endpoints from Platformeco definitions not implemented yet')
+        log.warn('Initialization of endpoints from Platformeco definitions not implemented yet');
       }
     } catch (err) {
       log.error(err.message);

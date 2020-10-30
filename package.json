@@ -4,9 +4,10 @@
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
+    "commit": "commit",
     "test": "nyc mocha",
-    "doc": "jsdoc2md --no-gfm --files ./src/** >> ./docs/api2.md",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "version": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
   },
   "repository": {
     "type": "git",
@@ -50,7 +51,17 @@
     "yl-artillery": "^1.6.0-26"
   },
   "devDependencies": {
+    "@commitlint/cli": "^11.0.0",
+    "@commitlint/config-conventional": "^11.0.0",
+    "@commitlint/prompt-cli": "^10.0.0",
+    "conventional-changelog-cli": "^2.1.0",
     "eslint": "^7.8.1",
+    "husky": "^4.3.0",
     "nyc": "^15.1.0"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
   }
 }
