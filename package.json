@@ -4,6 +4,7 @@
   "description": "API testing framework",
   "main": "index.js",
   "scripts": {
+    "commit": "commit",
     "test": "nyc mocha",
     "doc": "jsdoc2md --no-gfm --files ./src/** >> ./docs/api2.md",
     "lint": "eslint ./src"
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
+    "@commitlint/prompt-cli": "^10.0.0",
     "eslint": "^7.8.1",
     "husky": "^4.3.0",
     "nyc": "^15.1.0"
