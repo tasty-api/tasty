@@ -6,7 +6,6 @@
   "scripts": {
     "commit": "commit",
     "test": "nyc mocha",
-    "doc": "jsdoc2md --no-gfm --files ./src/** >> ./docs/api2.md",
     "lint": "eslint ./src"
   },
   "repository": {
