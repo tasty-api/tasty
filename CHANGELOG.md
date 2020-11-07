@@ -1,3 +1,7 @@
+## [0.5.1](https://gitlab.lmru.adeo.com/api-manager/tasty/compare/v0.5.0...v0.5.1) (2020-11-07)
+
+
+
 # [0.5.0](https://gitlab.lmru.adeo.com/api-manager/tasty/compare/v0.4.9...v0.5.0) (2020-10-30)
 
 
