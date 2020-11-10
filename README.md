@@ -78,3 +78,6 @@ tasty.case('Tests for /product',
 ## Sponsors
 ![Leroy Merlin](https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/sponsors/LM.svg)
 ![LM Tech](https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/sponsors/LM-tech.svg)
+
+## License
+This project is licensed under the terms of the Apache-2.0 license.
