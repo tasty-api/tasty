@@ -1,6 +1,6 @@
 {
   "name": "tasty-api",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "API testing framework",
   "main": "index.js",
   "author": "Yegor Litvyakov <ylitvyakov@gmail.com>",
