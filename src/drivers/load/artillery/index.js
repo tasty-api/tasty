@@ -9,8 +9,7 @@ const loadRun = promisify(artillery.run);
 const _ = require('lodash');
 const utils = require('../../../../libs/utils');
 const config = require('../../../../config');
-const mkdirp = require('mkdirp');
-const mkdir = promisify(mkdirp);
+const mkdir = require('mkdirp');
 
 const TEMP_LOAD_CONFIG = '.artillery.json.tmp';
 const TEMP_LOAD_OUTPUT = '.artillery.o.tmp';

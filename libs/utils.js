@@ -3,7 +3,7 @@ const _ = require('lodash');
 const path = require('path');
 const util = require('util');
 const fs = require('fs');
-const mkdirp = require('mkdirp');
+const mkdir = require('mkdirp');
 const Convert = require('ansi-to-html');
 const rimraf = require('rimraf');
 const { promisify } = require('util');
@@ -15,7 +15,6 @@ const Base = require('mocha/lib/reporters/base');
 const log = require('./log')(module);
 
 const unlink = util.promisify(fs.unlink);
-const mkdir = util.promisify(mkdirp);
 
 const convert = new Convert();
 
