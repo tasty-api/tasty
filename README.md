@@ -20,7 +20,6 @@ If you want to focus on the essence of api testing, and want to increase the spe
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
 - [Sponsors](#sponsors)
 - [License](#license)
 
@@ -98,13 +97,6 @@ tasty-api
 ```
 
 ### 5. Drink coffee with a slice of cherry pie :coffee: :cake:
-
-## Contributing
-
-In the project strictly used:
-
-- [GitFlow](https://ru.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) workflow
-- [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in commit messages
 
 ## Sponsors
 ![Leroy Merlin](https://raw.githubusercontent.com/tasty-api/tasty/master/src/assets/sponsors/LM.svg)
