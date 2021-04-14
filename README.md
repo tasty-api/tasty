@@ -4,6 +4,8 @@
 
 # TastyJS [![CircleCI](https://circleci.com/gh/tasty-api/tasty/tree/master.svg?style=svg)](https://circleci.com/gh/tasty-api/tasty/tree/master)
 
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+
 TastyJS is an API testing framework (contract testing) which will make your testing process tastier.
 
 TastyJS doesn't pretend to be a Swizz knife in testing world. It's a syntactic sugar above mocha and other testing kitchen
