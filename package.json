@@ -43,7 +43,7 @@
     "mkdirp": "^1.0.4",
     "mocha": "8.2.0",
     "mochawesome": "^6.1.1",
-    "nconf": "^0.10.0",
+    "nconf": "^0.11.4",
     "recursive-readdir": "^2.2.2",
     "require-dir": "^1.2.0",
     "rimraf": "^3.0.2",
